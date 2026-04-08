@@ -4,7 +4,7 @@
  * ============================================================
  *  Tech Stack: React + Tailwind CSS + Lucide React
  *  API:        Anthropic Claude API (client-side, user's key)
- *  Design:     Clean dark background, high-contrast light text
+ *  Design:     Apple design system — SF Pro, #f5f5f7, #0071e3
  * ============================================================
  */
 
@@ -57,23 +57,28 @@ OUTPUT:
 Respond ONLY with the Markdown resume + notes. No other text.`;
 
 /* ──────────────────────────────────────────────────────────
-   THEME — centralised color tokens
+   THEME — Apple design system tokens
    ────────────────────────────────────────────────────────── */
 const T = {
-  bg:          "#0B0F1A",
-  card:        "#111827",
-  cardBorder:  "#1E293B",
-  inputBg:     "#0F172A",
-  accent:      "#38BDF8",       // sky-400
-  accentDim:   "rgba(56,189,248,0.12)",
-  accent2:     "#A78BFA",       // violet-400
-  textPrimary: "#F1F5F9",       // slate-100
-  textBody:    "#CBD5E1",       // slate-300
-  textMuted:   "#94A3B8",       // slate-400
-  textDim:     "#64748B",       // slate-500
-  error:       "#F87171",
-  errorBg:     "rgba(248,113,113,0.08)",
-  success:     "#4ADE80",
+  bg:          "#f5f5f7",                              // Apple light gray page
+  card:        "#ffffff",                              // White cards
+  cardShadow:  "rgba(0,0,0,0.10) 0px 2px 20px 0px",  // Soft diffused shadow
+  inputBg:     "#ffffff",
+  inputBorder: "rgba(0,0,0,0.14)",
+  sectionBg:   "rgba(0,0,0,0.04)",                    // Subtle inner backgrounds
+  accent:      "#0071e3",                              // Apple Blue — only accent
+  accentHover: "#0077ed",
+  accentDim:   "rgba(0,113,227,0.08)",
+  textPrimary: "#1d1d1f",
+  textBody:    "rgba(0,0,0,0.80)",
+  textMuted:   "rgba(0,0,0,0.48)",
+  textDim:     "rgba(0,0,0,0.28)",
+  divider:     "rgba(0,0,0,0.08)",
+  error:       "#ff3b30",
+  errorBg:     "rgba(255,59,48,0.06)",
+  success:     "#34c759",
+  navBg:       "rgba(22,22,23,0.82)",
+  font:        "-apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif",
 };
 
 /* ──────────────────────────────────────────────────────────
@@ -83,20 +88,21 @@ function renderMarkdown(md) {
   if (!md) return "";
   let html = md
     .replace(/```(\w*)\n([\s\S]*?)```/g,
-      `<pre style="background:${T.inputBg};padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;border:1px solid ${T.cardBorder}"><code>$2</code></pre>`)
+      `<pre style="background:#f5f5f7;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;border:1px solid rgba(0,0,0,0.08)"><code>$2</code></pre>`)
     .replace(/`([^`]+)`/g,
-      `<code style="background:${T.cardBorder};padding:2px 6px;border-radius:4px;font-size:13px">$1</code>`)
-    .replace(/^#### (.+)$/gm, `<h4 style="font-size:14px;font-weight:700;margin:20px 0 8px;color:${T.textPrimary}">$1</h4>`)
-    .replace(/^### (.+)$/gm,  `<h3 style="font-size:16px;font-weight:700;margin:24px 0 10px;color:${T.textPrimary}">$1</h3>`)
-    .replace(/^## (.+)$/gm,   `<h2 style="font-size:20px;font-weight:700;margin:28px 0 12px;color:${T.accent};border-bottom:1px solid ${T.cardBorder};padding-bottom:8px">$1</h2>`)
-    .replace(/^# (.+)$/gm,    `<h1 style="font-size:26px;font-weight:800;margin:0 0 16px;color:${T.textPrimary}">$1</h1>`)
+      `<code style="background:#f5f5f7;padding:2px 6px;border-radius:4px;font-size:13px;color:#1d1d1f">$1</code>`)
+    .replace(/^#### (.+)$/gm, `<h4 style="font-size:14px;font-weight:600;margin:20px 0 8px;color:#1d1d1f;letter-spacing:-0.224px">$1</h4>`)
+    .replace(/^### (.+)$/gm,  `<h3 style="font-size:17px;font-weight:600;margin:24px 0 10px;color:#1d1d1f;letter-spacing:-0.374px">$1</h3>`)
+    .replace(/^## (.+)$/gm,   `<h2 style="font-size:21px;font-weight:600;margin:28px 0 12px;color:#1d1d1f;letter-spacing:0.231px;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:8px">$1</h2>`)
+    .replace(/^# (.+)$/gm,    `<h1 style="font-size:28px;font-weight:600;margin:0 0 16px;color:#1d1d1f;letter-spacing:0.196px;line-height:1.14">$1</h1>`)
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/\*\*(.+?)\*\*/g, `<strong style="color:${T.textPrimary}">$1</strong>`)
+    .replace(/\*\*(.+?)\*\*/g, `<strong style="color:#1d1d1f;font-weight:600">$1</strong>`)
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^[\-\*] (.+)$/gm, '<li style="margin:4px 0;padding-left:4px">$1</li>')
-    .replace(/^---$/gm, `<hr style="border:none;border-top:1px solid ${T.cardBorder};margin:24px 0"/>`)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:${T.accent};text-decoration:underline">$1</a>`)
-    .replace(/^(?!<[hlpuoa]|<li|<pre|<hr|<code|<strong|<em)(.+)$/gm, '<p style="margin:6px 0;line-height:1.7">$1</p>');
+    .replace(/^[\-\*] (.+)$/gm, '<li style="margin:4px 0;padding-left:4px;color:rgba(0,0,0,0.80)">$1</li>')
+    .replace(/^---$/gm, `<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0"/>`)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:#0066cc;text-decoration:underline">$1</a>`)
+    .replace(/^(?!<[hlpuoa]|<li|<pre|<hr|<code|<strong|<em)(.+)$/gm,
+      '<p style="margin:6px 0;line-height:1.47;color:rgba(0,0,0,0.80);letter-spacing:-0.374px;font-size:17px">$1</p>');
   html = html.replace(/((?:<li[^>]*>.*<\/li>\s*)+)/g, '<ul style="list-style:disc;padding-left:24px;margin:8px 0">$1</ul>');
   return html;
 }
@@ -133,11 +139,11 @@ function downloadAsPdf(htmlContent, filename = "optimized-resume.pdf") {
   const w = window.open("", "_blank");
   if (!w) { alert("Please allow pop-ups to download the PDF"); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>
-<style>body{font-family:'Segoe UI',sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7;font-size:14px}
-h1{font-size:24px;border-bottom:2px solid #0891b2;padding-bottom:8px}h2{font-size:18px;color:#0e7490;margin-top:24px;border-bottom:1px solid #ccc;padding-bottom:4px}
-h3{font-size:15px;margin-top:16px}ul{padding-left:24px}li{margin:4px 0}strong{color:#111}
-code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}pre{background:#f1f5f9;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}
-a{color:#0891b2}@media print{body{margin:20px}}</style></head><body>${htmlContent}</body></html>`);
+<style>body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1d1d1f;line-height:1.47;font-size:17px;letter-spacing:-0.374px}
+h1{font-size:28px;font-weight:600;letter-spacing:0.196px;line-height:1.14}h2{font-size:21px;font-weight:600;color:#1d1d1f;margin-top:24px;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:4px}
+h3{font-size:17px;font-weight:600;margin-top:16px}ul{padding-left:24px}li{margin:4px 0}strong{color:#1d1d1f;font-weight:600}
+code{background:#f5f5f7;padding:2px 5px;border-radius:3px;font-size:13px}pre{background:#f5f5f7;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}
+a{color:#0066cc}@media print{body{margin:20px}}</style></head><body>${htmlContent}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 400);
 }
@@ -163,49 +169,53 @@ function ApiKeyPanel({ apiKey, setApiKey }) {
   };
 
   return (
-    <div style={{ background: T.card, borderColor: T.cardBorder }} className="rounded-2xl border overflow-hidden">
+    <div style={{ background: T.card, boxShadow: T.cardShadow, fontFamily: T.font }}
+      className="rounded-2xl overflow-hidden">
       <button onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 transition-colors hover:brightness-110">
+        className="w-full flex items-center justify-between px-6 py-4 transition-opacity"
+        style={{ background: T.card }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: saved ? T.accentDim : "rgba(251,146,60,0.12)" }}>
-            {saved ? <KeyRound size={16} color={T.accent} /> : <Settings size={16} color="#fb923c" />}
+            style={{ background: saved ? T.accentDim : T.sectionBg }}>
+            {saved ? <KeyRound size={16} color={T.accent} /> : <Settings size={16} color={T.textMuted} />}
           </div>
-          <span className="font-semibold text-sm" style={{ color: T.textPrimary }}>
+          <span className="font-semibold text-sm" style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
             API Settings
-            {saved && <span className="ml-2 text-xs font-normal" style={{ color: T.accent }}> Connected</span>}
+            {saved && <span className="ml-2 text-xs font-normal" style={{ color: T.accent }}>Connected</span>}
           </span>
         </div>
         {open ? <ChevronUp size={16} color={T.textMuted} /> : <ChevronDown size={16} color={T.textMuted} />}
       </button>
+
       {open && (
-        <div className="px-5 pb-5 pt-1">
-          <p className="text-xs mb-3" style={{ color: T.textMuted }}>
+        <div className="px-6 pb-6">
+          <div style={{ height: "1px", background: T.divider, marginBottom: "20px" }} />
+          <p className="text-xs mb-4" style={{ color: T.textMuted, letterSpacing: "-0.12px", lineHeight: "1.47" }}>
             <Info size={12} className="inline mr-1 -mt-0.5" />
-            Your API Key is stored only in your browser's LocalStorage and is never sent to any third-party server.
+            Your API Key is stored only in your browser's LocalStorage and never sent to any third-party server.
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <input type={showKey ? "text" : "password"} value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setSaved(false); }}
                 placeholder="sk-ant-api03-..."
-                className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-sky-400/50"
-                style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary }} />
+                className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+                style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`,
+                  color: T.textPrimary, letterSpacing: "-0.224px", fontFamily: T.font }} />
               <button onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: T.textMuted }}>
-                {showKey ? "Hide" : "Show"}
-              </button>
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium"
+                style={{ color: T.accent }}>{showKey ? "Hide" : "Show"}</button>
             </div>
             <button onClick={handleSave}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95"
-              style={{ background: T.accent, color: T.bg }}>Save</button>
+              className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95"
+              style={{ background: T.accent, color: "#fff", letterSpacing: "-0.374px" }}>Save</button>
             {apiKey && (
-              <button onClick={handleClear} className="px-3 py-2.5 rounded-xl transition-all hover:bg-white/5"
-                style={{ color: T.error }}><Trash2 size={16} /></button>
+              <button onClick={handleClear} className="px-3 py-2.5 rounded-xl transition-all"
+                style={{ color: T.error, background: T.errorBg }}><Trash2 size={16} /></button>
             )}
           </div>
           {saved && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: T.success }}>
+            <p className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: T.success, letterSpacing: "-0.12px" }}>
               <CheckCircle2 size={13} /> API Key saved
             </p>
           )}
@@ -227,7 +237,9 @@ function FileUploadArea({ file, setFile, resumeText, setResumeText }) {
   const handleFile = async (f) => {
     if (!f) return;
     const ext = f.name.split(".").pop().toLowerCase();
-    if (!["pdf", "md", "txt", "markdown"].includes(ext)) { setError("Only PDF / Markdown / TXT files are supported"); return; }
+    if (!["pdf", "md", "txt", "markdown"].includes(ext)) {
+      setError("Only PDF / Markdown / TXT files are supported"); return;
+    }
     setError(""); setFile(f); setReading(true);
     try { setResumeText(await readFileAsText(f)); } catch (err) { setError(err.message); }
     setReading(false);
@@ -235,15 +247,20 @@ function FileUploadArea({ file, setFile, resumeText, setResumeText }) {
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-semibold flex items-center gap-2" style={{ color: T.textPrimary }}>
+      <label className="text-sm font-semibold flex items-center gap-2"
+        style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
         <Upload size={15} color={T.accent} /> Upload Resume
       </label>
-      <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
         onClick={() => inputRef.current?.click()}
         className="relative rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-all"
-        style={{ borderColor: dragging ? T.accent : T.cardBorder, background: dragging ? T.accentDim : "transparent" }}>
+        style={{
+          borderColor: dragging ? T.accent : T.inputBorder,
+          background: dragging ? T.accentDim : T.sectionBg,
+        }}>
         <input ref={inputRef} type="file" accept=".pdf,.md,.txt,.markdown" className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])} />
         {reading ? (
@@ -251,26 +268,38 @@ function FileUploadArea({ file, setFile, resumeText, setResumeText }) {
         ) : file ? (
           <div className="flex flex-col items-center gap-2">
             <FileText size={28} color={T.accent} />
-            <p className="text-sm font-medium" style={{ color: T.textPrimary }}>{file.name}</p>
-            <p className="text-xs" style={{ color: T.textMuted }}>{(file.size / 1024).toFixed(1)} KB · Click to replace</p>
+            <p className="text-sm font-medium" style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>{file.name}</p>
+            <p className="text-xs" style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+              {(file.size / 1024).toFixed(1)} KB · Click to replace
+            </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <Upload size={28} color={T.textDim} />
-            <p className="text-sm" style={{ color: T.textBody }}>
+            <p className="text-sm" style={{ color: T.textBody, letterSpacing: "-0.374px" }}>
               Drag & drop or <span style={{ color: T.accent }}>click to upload</span>
             </p>
-            <p className="text-xs" style={{ color: T.textMuted }}>Supports PDF / Markdown / TXT</p>
+            <p className="text-xs" style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+              Supports PDF / Markdown / TXT
+            </p>
           </div>
         )}
       </div>
-      {error && <p className="text-xs flex items-center gap-1.5" style={{ color: T.error }}><AlertCircle size={13} /> {error}</p>}
+      {error && (
+        <p className="text-xs flex items-center gap-1.5" style={{ color: T.error, letterSpacing: "-0.12px" }}>
+          <AlertCircle size={13} /> {error}
+        </p>
+      )}
       <details>
-        <summary className="text-xs cursor-pointer select-none" style={{ color: T.textMuted }}>Or paste resume text directly ▾</summary>
+        <summary className="text-xs cursor-pointer select-none"
+          style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+          Or paste resume text directly ▾
+        </summary>
         <textarea value={resumeText} onChange={(e) => setResumeText(e.target.value)} rows={6}
           placeholder="Paste your resume content here..."
-          className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all focus:ring-2 focus:ring-sky-400/50"
-          style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary, minHeight: "120px" }} />
+          className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all"
+          style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`,
+            color: T.textPrimary, minHeight: "120px", fontFamily: T.font, letterSpacing: "-0.224px" }} />
       </details>
     </div>
   );
@@ -281,53 +310,65 @@ function FileUploadArea({ file, setFile, resumeText, setResumeText }) {
    ────────────────────────────────────────────────────────── */
 function ResultPanel({ result, loading }) {
   const [copied, setCopied] = useState(false);
-  const copyMd = () => { navigator.clipboard.writeText(result).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
+  const copyMd = () => {
+    navigator.clipboard.writeText(result).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   if (loading) {
     return (
-      <div className="rounded-2xl border p-10 flex flex-col items-center justify-center gap-4"
-        style={{ borderColor: T.cardBorder, background: T.card, minHeight: "300px" }}>
-        <div className="relative">
-          <Loader2 size={36} className="animate-spin" color={T.accent} />
-          <Sparkles size={14} className="absolute -top-1 -right-1 animate-pulse" color={T.accent2} />
-        </div>
-        <p className="text-sm font-medium" style={{ color: T.textBody }}>AI is optimizing your resume...</p>
-        <p className="text-xs" style={{ color: T.textMuted }}>This usually takes 15–30 seconds</p>
+      <div className="rounded-2xl p-10 flex flex-col items-center justify-center gap-4"
+        style={{ background: T.card, boxShadow: T.cardShadow, minHeight: "300px" }}>
+        <Loader2 size={36} className="animate-spin" color={T.accent} />
+        <p className="text-sm font-medium" style={{ color: T.textBody, letterSpacing: "-0.374px" }}>
+          AI is optimizing your resume…
+        </p>
+        <p className="text-xs" style={{ color: T.textMuted, letterSpacing: "-0.224px" }}>
+          This usually takes 15–30 seconds
+        </p>
       </div>
     );
   }
+
   if (!result) {
     return (
-      <div className="rounded-2xl border p-10 flex flex-col items-center justify-center gap-3"
-        style={{ borderColor: T.cardBorder, background: T.card, minHeight: "300px" }}>
-        <Bot size={40} color={T.cardBorder} />
-        <p className="text-sm" style={{ color: T.textMuted }}>Your optimized resume will appear here</p>
+      <div className="rounded-2xl p-10 flex flex-col items-center justify-center gap-3"
+        style={{ background: T.card, boxShadow: T.cardShadow, minHeight: "300px" }}>
+        <Bot size={40} color={T.textDim} />
+        <p className="text-sm" style={{ color: T.textMuted, letterSpacing: "-0.374px" }}>
+          Your optimized resume will appear here
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: T.cardBorder, background: T.card }}>
-      <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: T.cardBorder }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: T.card, boxShadow: T.cardShadow }}>
+      <div className="flex items-center justify-between px-6 py-3.5"
+        style={{ borderBottom: `1px solid ${T.divider}` }}>
         <div className="flex items-center gap-2">
           <Eye size={15} color={T.accent} />
-          <span className="text-sm font-semibold" style={{ color: T.textPrimary }}>Preview</span>
+          <span className="text-sm font-semibold" style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
+            Preview
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={copyMd}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-white/5"
-            style={{ color: T.textMuted }}>
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+            style={{ color: T.textMuted, background: T.sectionBg, letterSpacing: "-0.12px" }}>
             {copied ? <Check size={13} color={T.success} /> : <Copy size={13} />}
             {copied ? "Copied!" : "Copy Markdown"}
           </button>
           <button onClick={() => downloadAsPdf(renderMarkdown(result))}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110 active:scale-95"
-            style={{ background: T.accentDim, color: T.accent }}>
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-all active:scale-95"
+            style={{ background: T.accent, color: "#fff", letterSpacing: "-0.12px" }}>
             <Download size={13} /> Download PDF
           </button>
         </div>
       </div>
-      <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: "600px", color: T.textBody }}
+      <div className="px-6 py-5 overflow-y-auto"
+        style={{ maxHeight: "600px", color: T.textBody, fontFamily: T.font }}
         dangerouslySetInnerHTML={{ __html: renderMarkdown(result) }} />
     </div>
   );
@@ -364,7 +405,6 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
 
   const parser = new DOMParser();
 
-  // Step 1: fetch job listing
   const searchUrl = new URL(
     "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
   );
@@ -377,7 +417,6 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
   if (!listResp.ok) throw new Error(`Proxy error (${listResp.status})`);
   const listHtml = await listResp.text();
 
-  // Step 2: parse job cards — extract jobIds separately (internal, not in return shape)
   const doc = parser.parseFromString(listHtml, "text/html");
   const cards = Array.from(doc.querySelectorAll(".base-card")).slice(0, limit);
 
@@ -385,18 +424,17 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
   const jobs = cards.map((card) => {
     const link = card.querySelector("a.base-card__full-link");
     return {
-      title:    card.querySelector(".base-search-card__title")?.textContent?.trim()    || "",
-      company:  card.querySelector(".base-search-card__subtitle")?.textContent?.trim() || "",
-      location: card.querySelector(".job-search-card__location")?.textContent?.trim()  || "",
-      date:     card.querySelector("time")?.textContent?.trim()                        || "",
-      job_type: "",
-      salary:   "",
+      title:       card.querySelector(".base-search-card__title")?.textContent?.trim()    || "",
+      company:     card.querySelector(".base-search-card__subtitle")?.textContent?.trim() || "",
+      location:    card.querySelector(".job-search-card__location")?.textContent?.trim()  || "",
+      date:        card.querySelector("time")?.textContent?.trim()                        || "",
+      job_type:    "",
+      salary:      "",
       description: "",
-      url:      link ? link.href.split("?")[0] : "",
+      url:         link ? link.href.split("?")[0] : "",
     };
   });
 
-  // Step 3: fetch all descriptions in parallel
   const descriptions = await Promise.all(
     jobIds.map(async (jobId) => {
       if (!jobId) return "";
@@ -407,9 +445,7 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
         const html = await resp.text();
         const detail = parser.parseFromString(html, "text/html");
         return detail.querySelector(".description__text")?.textContent?.trim() || "";
-      } catch {
-        return "";
-      }
+      } catch { return ""; }
     })
   );
 
@@ -447,15 +483,18 @@ async function scoreJobsAgainstResume(jobs, resumeText, apiKey) {
   return JSON.parse(match[0]);
 }
 
+/* ──────────────────────────────────────────────────────────
+   COMPONENT: Match Score Badge
+   ────────────────────────────────────────────────────────── */
 function ScoreBadge({ score }) {
   if (score == null) return null;
-  const color = score >= 8 ? "#4ADE80" : score >= 5 ? "#FBBF24" : "#F87171";
-  const bg    = score >= 8 ? "rgba(74,222,128,0.12)" : score >= 5 ? "rgba(251,191,36,0.12)" : "rgba(248,113,113,0.12)";
+  const color = score >= 8 ? "#34c759" : score >= 5 ? "#ff9f0a" : "#ff3b30";
+  const bg    = score >= 8 ? "rgba(52,199,89,0.10)" : score >= 5 ? "rgba(255,159,10,0.10)" : "rgba(255,59,48,0.10)";
   return (
     <span title={`Match score: ${score}/10`}
-      className="inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-      style={{ background: bg, color }}>
-      {score}<span className="font-normal opacity-70">/10</span>
+      className="inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+      style={{ background: bg, color, letterSpacing: "-0.12px" }}>
+      {score}<span className="font-normal opacity-60">/10</span>
     </span>
   );
 }
@@ -485,7 +524,6 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
       const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10, controller.signal);
       setJobs(data);
       if (data.length === 0) { setError("No jobs found. Try different keywords."); return; }
-      // Kick off scoring in background if resume + key available
       if (resumeText?.trim() && apiKey?.trim()) {
         setScoring(true);
         scoreJobsAgainstResume(data, resumeText, apiKey)
@@ -507,19 +545,21 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
   };
 
   return (
-    <div style={{ background: T.card, borderColor: T.cardBorder }} className="rounded-2xl border overflow-hidden">
-      {/* Header toggle */}
+    <div style={{ background: T.card, boxShadow: T.cardShadow, fontFamily: T.font }}
+      className="rounded-2xl overflow-hidden">
+      {/* Header */}
       <button onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 transition-colors hover:brightness-110">
+        className="w-full flex items-center justify-between px-6 py-4"
+        style={{ background: T.card }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "rgba(167,139,250,0.12)" }}>
-            <Briefcase size={16} color={T.accent2} />
+            style={{ background: T.sectionBg }}>
+            <Briefcase size={16} color={T.accent} />
           </div>
-          <span className="font-semibold text-sm" style={{ color: T.textPrimary }}>
+          <span className="font-semibold text-sm" style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
             LinkedIn Job Search
             {jobs.length > 0 && (
-              <span className="ml-2 text-xs font-normal" style={{ color: T.accent2 }}>
+              <span className="ml-2 text-xs font-normal" style={{ color: T.textMuted }}>
                 {jobs.length} results
               </span>
             )}
@@ -529,49 +569,54 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
       </button>
 
       {open && (
-        <div className="px-5 pb-5 pt-1 space-y-4">
+        <div className="px-6 pb-6">
+          <div style={{ height: "1px", background: T.divider, marginBottom: "20px" }} />
+
           {/* Search inputs */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap mb-4">
             <input
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder="Job title or keywords (e.g. Senior React Engineer)"
-              className="flex-1 min-w-[200px] rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-violet-400/50"
-              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary }}
+              className="flex-1 min-w-[200px] rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+              style={{ background: T.sectionBg, border: `1px solid ${T.inputBorder}`,
+                color: T.textPrimary, fontFamily: T.font, letterSpacing: "-0.224px" }}
             />
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder="Location (optional)"
-              className="w-44 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-violet-400/50"
-              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary }}
+              className="w-44 rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+              style={{ background: T.sectionBg, border: `1px solid ${T.inputBorder}`,
+                color: T.textPrimary, fontFamily: T.font, letterSpacing: "-0.224px" }}
             />
             <button
               onClick={handleSearch}
               disabled={!keywords.trim() || loading}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              style={{ background: T.accent2, color: "#fff" }}>
+              className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              style={{ background: T.accent, color: "#fff", letterSpacing: "-0.374px" }}>
               {loading
-                ? <><Loader2 size={15} className="animate-spin" /> Searching...</>
+                ? <><Loader2 size={15} className="animate-spin" /> Searching…</>
                 : <><Search size={15} /> Search Jobs</>}
             </button>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
-              style={{ background: T.errorBg, border: `1px solid rgba(248,113,113,0.2)`, color: "#fecaca" }}>
-              <AlertCircle size={15} className="mt-0.5 flex-shrink-0" color={T.error} />
-              <p style={{ color: T.error }}>{error}</p>
-              <button onClick={() => setError("")} className="ml-auto"><X size={13} color={T.error} /></button>
+            <div className="rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm mb-4"
+              style={{ background: T.errorBg, color: T.error }}>
+              <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+              <p style={{ letterSpacing: "-0.224px" }}>{error}</p>
+              <button onClick={() => setError("")} className="ml-auto"><X size={13} /></button>
             </div>
           )}
 
           {/* Scoring indicator */}
           {scoring && (
-            <p className="text-xs flex items-center gap-1.5" style={{ color: T.textMuted }}>
+            <p className="text-xs flex items-center gap-1.5 mb-3"
+              style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
               <Loader2 size={12} className="animate-spin" /> Calculating match scores…
             </p>
           )}
@@ -580,27 +625,36 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
           {jobs.length > 0 && (
             <div className="space-y-3">
               {jobs.map((job, idx) => (
-                <div key={idx} className="rounded-xl border p-4 space-y-2 transition-all"
+                <div key={idx} className="rounded-2xl p-5 transition-all"
                   style={{
-                    borderColor: filledIdx === idx ? T.success : T.cardBorder,
-                    background: filledIdx === idx ? "rgba(74,222,128,0.05)" : T.inputBg,
+                    background: filledIdx === idx ? "rgba(52,199,89,0.05)" : T.sectionBg,
+                    border: `1.5px solid ${filledIdx === idx ? T.success : "transparent"}`,
                   }}>
                   {/* Title row */}
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 mb-1">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-sm" style={{ color: T.textPrimary }}>{job.title}</p>
+                        <p className="font-semibold text-sm"
+                          style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
+                          {job.title}
+                        </p>
                         <ScoreBadge score={scores[idx]} />
                       </div>
-                      <p className="text-xs mt-0.5" style={{ color: T.textBody }}>{job.company}</p>
+                      <p className="text-xs mt-0.5" style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+                        {job.company}
+                      </p>
                     </div>
                     {job.job_type && (
-                      <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: T.accentDim, color: T.accent }}>{job.job_type}</span>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: T.accentDim, color: T.accent, letterSpacing: "-0.12px" }}>
+                        {job.job_type}
+                      </span>
                     )}
                   </div>
+
                   {/* Meta row */}
-                  <div className="flex flex-wrap gap-3 text-xs" style={{ color: T.textMuted }}>
+                  <div className="flex flex-wrap gap-3 text-xs mb-2"
+                    style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
                     {job.location && (
                       <span className="flex items-center gap-1"><MapPin size={11} />{job.location}</span>
                     )}
@@ -611,26 +665,30 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
                       <span className="flex items-center gap-1"><DollarSign size={11} />{job.salary}</span>
                     )}
                   </div>
+
                   {/* Description snippet */}
                   {job.description && (
-                    <p className="text-xs leading-relaxed line-clamp-2" style={{ color: T.textMuted }}>
+                    <p className="text-xs leading-relaxed line-clamp-2 mb-3"
+                      style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
                       "{job.description}"
                     </p>
                   )}
+
                   {/* Action buttons */}
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleFillJd(job, idx)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110 active:scale-95"
-                      style={{ background: filledIdx === idx ? "rgba(74,222,128,0.12)" : T.accentDim, color: filledIdx === idx ? T.success : T.accent }}>
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all active:scale-95"
+                      style={{
+                        background: filledIdx === idx ? "rgba(52,199,89,0.12)" : T.accentDim,
+                        color: filledIdx === idx ? T.success : T.accent,
+                        letterSpacing: "-0.12px",
+                      }}>
                       {filledIdx === idx ? <><Check size={12} /> Filled</> : <><FileText size={12} /> Fill JD</>}
                     </button>
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-white/5"
-                      style={{ color: T.textMuted, border: `1px solid ${T.cardBorder}` }}>
+                    <a href={job.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
+                      style={{ color: "#0066cc", border: "1px solid rgba(0,102,204,0.3)", letterSpacing: "-0.12px" }}>
                       <ExternalLink size={12} /> View on LinkedIn
                     </a>
                   </div>
@@ -676,9 +734,10 @@ export default function App() {
         const errBody = await res.json().catch(() => ({}));
         const msg = errBody?.error?.message || "";
         if (res.status === 401) throw new Error("Invalid or expired API Key — please check and update it.");
-        if (res.status === 429) throw new Error("Rate limit reached. You've sent too many requests in a short time. Please wait 30–60 seconds and try again.");
+        if (res.status === 429) throw new Error("Rate limit reached. Please wait 30–60 seconds and try again.");
         if (res.status === 529) throw new Error("Claude API is overloaded right now. Please wait a moment and try again.");
-        if (res.status === 400 && msg.toLowerCase().includes("token")) throw new Error("Input is too long. Please shorten your resume or job description and try again.");
+        if (res.status === 400 && msg.toLowerCase().includes("token"))
+          throw new Error("Input is too long. Please shorten your resume or job description.");
         throw new Error(`API error (${res.status})${msg ? `: ${msg}` : ""}`);
       }
       const data = await res.json();
@@ -701,63 +760,82 @@ export default function App() {
   const canSubmit = apiKey.trim() && jd.trim() && resumeText.trim() && !loading;
 
   return (
-    <div className="min-h-screen" style={{ background: T.bg, color: T.textBody }}>
+    <div className="min-h-screen" style={{ background: T.bg, color: T.textBody, fontFamily: T.font }}>
 
-      {/* Soft ambient glow */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
-          style={{ background: `radial-gradient(circle, ${T.accent} 0%, transparent 70%)`, opacity: 0.06, filter: "blur(140px)" }} />
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full"
-          style={{ background: `radial-gradient(circle, ${T.accent2} 0%, transparent 70%)`, opacity: 0.05, filter: "blur(140px)" }} />
-      </div>
-
-      {/* Header */}
-      <header className="relative z-10 border-b" style={{ borderColor: T.cardBorder }}>
-        <div className="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg, #0284C7, ${T.accent2})` }}>
-              <Star size={20} color="#fff" fill="#fff" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight"
-                style={{ color: T.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>
-                Resume Star
-              </h1>
-              <p className="text-xs" style={{ color: T.textMuted }}>Powered by Claude · AI-driven JD keyword matching</p>
-            </div>
+      {/* Navigation — Apple glass nav */}
+      <header className="sticky top-0 z-50"
+        style={{ background: T.navBg, backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="max-w-[980px] mx-auto px-5 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Star size={17} color="#fff" fill="#fff" />
+            <span className="text-sm font-medium text-white" style={{ letterSpacing: "-0.374px" }}>
+              Resume Star
+            </span>
           </div>
           <a href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener noreferrer"
-            className="text-xs px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
-            style={{ color: T.textMuted, border: `1px solid ${T.cardBorder}` }}>
+            className="text-xs transition-opacity opacity-80 hover:opacity-100"
+            style={{ color: "#2997ff", letterSpacing: "-0.12px" }}>
             API Docs ↗
           </a>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="relative z-10 max-w-7xl mx-auto px-5 py-8">
-        <div className="mb-4"><ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} /></div>
-        <div className="mb-8"><LinkedInSearchPanel setJd={setJd} apiKey={apiKey} resumeText={resumeText} /></div>
+      {/* Hero section — dark */}
+      <section style={{ background: "#000000" }}>
+        <div className="max-w-[980px] mx-auto px-5 py-16 text-center">
+          <h1 style={{
+            fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 600, color: "#ffffff",
+            lineHeight: 1.07, letterSpacing: "-0.28px", margin: "0 0 12px"
+          }}>
+            Resume Star.
+          </h1>
+          <p style={{
+            fontSize: "21px", fontWeight: 400, color: "rgba(255,255,255,0.72)",
+            lineHeight: 1.19, letterSpacing: "0.231px", margin: "0 auto 28px", maxWidth: "520px"
+          }}>
+            AI-powered resume optimization. Matched to the job description. True to your story.
+          </p>
+          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.32)", letterSpacing: "-0.12px" }}>
+            Powered by Claude · Your data never leaves your browser
+          </p>
+        </div>
+      </section>
+
+      {/* Main content */}
+      <main className="max-w-[980px] mx-auto px-5 py-10 space-y-5">
+
+        <ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} />
+        <LinkedInSearchPanel setJd={setJd} apiKey={apiKey} resumeText={resumeText} />
 
         {/* Inputs row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="rounded-2xl border p-5 space-y-3" style={{ borderColor: T.cardBorder, background: T.card }}>
-            <label className="text-sm font-semibold flex items-center gap-2" style={{ color: T.textPrimary }}>
-              <FileText size={15} color={T.accent2} /> Job Description
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="rounded-2xl p-6 space-y-3"
+            style={{ background: T.card, boxShadow: T.cardShadow }}>
+            <label className="text-sm font-semibold flex items-center gap-2"
+              style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
+              <FileText size={15} color={T.accent} /> Job Description
             </label>
             <textarea value={jd} onChange={(e) => setJd(e.target.value)} rows={10}
-              placeholder={"Paste the target job description here...\n\nExample:\nWe are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript..."}
-              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all focus:ring-2 focus:ring-violet-400/50"
-              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary, minHeight: "200px" }} />
-            {jd.length > 0 && <p className="text-xs text-right" style={{ color: T.textMuted }}>{jd.length} chars</p>}
+              placeholder={"Paste the target job description here…\n\nExample:\nWe are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript…"}
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all"
+              style={{ background: T.sectionBg, border: `1px solid ${T.inputBorder}`,
+                color: T.textPrimary, minHeight: "200px", fontFamily: T.font, letterSpacing: "-0.224px",
+                lineHeight: "1.47" }} />
+            {jd.length > 0 && (
+              <p className="text-xs text-right" style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+                {jd.length} chars
+              </p>
+            )}
           </div>
 
-          <div className="rounded-2xl border p-5" style={{ borderColor: T.cardBorder, background: T.card }}>
+          <div className="rounded-2xl p-6" style={{ background: T.card, boxShadow: T.cardShadow }}>
             <FileUploadArea file={file} setFile={setFile} resumeText={resumeText} setResumeText={setResumeText} />
             {resumeText && (
-              <p className="mt-3 text-xs" style={{ color: T.textMuted }}>
-                <CheckCircle2 size={12} className="inline mr-1" color={T.success} /> {resumeText.length} characters extracted
+              <p className="mt-3 text-xs flex items-center gap-1"
+                style={{ color: T.success, letterSpacing: "-0.12px" }}>
+                <CheckCircle2 size={12} /> {resumeText.length} characters extracted
               </p>
             )}
           </div>
@@ -765,47 +843,70 @@ export default function App() {
 
         {/* Optimize button */}
         <button onClick={handleOptimize} disabled={!canSubmit}
-          className="w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.99]"
+          className="w-full py-4 rounded-2xl text-base font-medium transition-all flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99]"
           style={{
-            background: canSubmit ? `linear-gradient(135deg, #0284C7, ${T.accent2})` : T.cardBorder,
+            background: canSubmit ? T.accent : "rgba(0,0,0,0.10)",
             color: canSubmit ? "#fff" : T.textDim,
-            boxShadow: canSubmit ? `0 4px 24px ${T.accentDim}` : "none",
+            letterSpacing: "-0.374px",
           }}>
-          {loading ? <><Loader2 size={18} className="animate-spin" /> Optimizing...</> : <><Sparkles size={18} /> Optimize with AI</>}
+          {loading
+            ? <><Loader2 size={18} className="animate-spin" /> Optimizing…</>
+            : <><Sparkles size={18} /> Optimize with AI</>}
         </button>
-        <p className="text-center text-xs mt-2" style={{ color: T.textDim }}>⌘ / Ctrl + Enter to submit</p>
+        <p className="text-center text-xs" style={{ color: T.textDim, letterSpacing: "-0.12px" }}>
+          ⌘ / Ctrl + Enter to submit
+        </p>
 
         {error && (
-          <div className="mt-4 rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
-            style={{ background: T.errorBg, border: `1px solid rgba(248,113,113,0.2)`, color: "#fecaca" }}>
+          <div className="rounded-xl px-5 py-4 flex items-start gap-3"
+            style={{ background: T.errorBg }}>
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" color={T.error} />
             <div>
-              <p className="font-medium" style={{ color: T.error }}>Error</p>
-              <p className="mt-0.5">{error}</p>
+              <p className="font-semibold text-sm" style={{ color: T.error, letterSpacing: "-0.374px" }}>
+                Error
+              </p>
+              <p className="mt-0.5 text-sm" style={{ color: T.error, letterSpacing: "-0.224px", opacity: 0.85 }}>
+                {error}
+              </p>
             </div>
-            <button onClick={() => setError("")} className="ml-auto flex-shrink-0 mt-0.5"><X size={14} color={T.error} /></button>
+            <button onClick={() => setError("")} className="ml-auto flex-shrink-0 mt-0.5">
+              <X size={14} color={T.error} />
+            </button>
           </div>
         )}
 
-        {/* Result — full width below button */}
-        <div className="mt-6"><ResultPanel result={result} loading={loading} /></div>
+        {/* Result */}
+        <div><ResultPanel result={result} loading={loading} /></div>
 
         {/* Tips */}
-        <div className="mt-12 rounded-2xl border p-6" style={{ borderColor: T.cardBorder, background: T.card }}>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: T.textMuted }}>
-            <Sparkles size={14} /> Tips
+        <div className="rounded-2xl p-6" style={{ background: T.card, boxShadow: T.cardShadow }}>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
+            style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
+            <Sparkles size={14} color={T.accent} /> Tips for best results
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs" style={{ color: T.textMuted }}>
-            <p><strong style={{ color: T.textBody }}>Precise Matching</strong> — Paste the full JD content; AI will automatically extract key skills and qualifications to align your resume.</p>
-            <p><strong style={{ color: T.textBody }}>Quantify Achievements</strong> — If your resume includes metrics or data, AI will prioritize and strengthen those quantified accomplishments.</p>
-            <p><strong style={{ color: T.textBody }}>Iterate Often</strong> — Reuse the same resume against different JDs to generate tailored versions for each application.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm"
+            style={{ color: T.textBody }}>
+            <p style={{ letterSpacing: "-0.224px", lineHeight: "1.47" }}>
+              <strong style={{ color: T.textPrimary, fontWeight: 600 }}>Precise Matching</strong><br />
+              Paste the full JD content; AI will extract key skills to align your resume.
+            </p>
+            <p style={{ letterSpacing: "-0.224px", lineHeight: "1.47" }}>
+              <strong style={{ color: T.textPrimary, fontWeight: 600 }}>Quantify Achievements</strong><br />
+              If your resume includes metrics, AI will prioritize and strengthen them.
+            </p>
+            <p style={{ letterSpacing: "-0.224px", lineHeight: "1.47" }}>
+              <strong style={{ color: T.textPrimary, fontWeight: 600 }}>Iterate Often</strong><br />
+              Reuse the same resume against different JDs to generate tailored versions.
+            </p>
           </div>
         </div>
       </main>
 
-      <footer className="relative z-10 border-t mt-12 py-6 text-center text-xs"
-        style={{ borderColor: T.cardBorder, color: T.textMuted }}>
-        Resume Star · Your API Key is stored locally in your browser · No personal data is collected
+      <footer className="border-t mt-12 py-8 text-center"
+        style={{ borderColor: T.divider }}>
+        <p className="text-xs" style={{ color: T.textMuted, letterSpacing: "-0.12px" }}>
+          Copyright © 2026 Resume Star · Your API Key is stored locally · No personal data is collected
+        </p>
       </footer>
     </div>
   );
