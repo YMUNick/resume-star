@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+linkedin-jobs-scraper
+playwright
+pytest
+httpx
