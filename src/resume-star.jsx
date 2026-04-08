@@ -25,26 +25,31 @@ const MODEL = "claude-sonnet-4-20250514";
 const MAX_TOKENS = 4096;
 const LS_KEY = "ai_resume_optimizer_api_key";
 
-const SYSTEM_PROMPT = `You are an expert career consultant. Your task is to lightly optimize an existing resume to better match a job description (JD), while keeping it completely authentic.
+const SYSTEM_PROMPT = `You are a resume keyword editor. You make the smallest possible edits to an existing resume to improve its JD alignment. The resume you receive is ground truth — treat it as nearly untouchable.
 
-STRICT RULES — never violate these:
-- DO NOT change the candidate's name, contact info, or job titles they have held.
-- DO NOT invent, fabricate, or add any experience, skill, company, degree, or achievement that is not already in the original resume.
-- DO NOT restructure the resume into a different layout. Preserve the original sections and their order.
-- Keep the result to ONE PAGE in length. Cut or condense lower-priority content if needed — do not expand beyond the original scope.
-- Every bullet point and claim must be traceable to the original resume content.
+ABSOLUTE PROHIBITIONS (zero exceptions):
+- Name, email, phone, LinkedIn, GitHub, and all personal details → copy verbatim, never alter.
+- Job titles, company names, employment dates, school names, degree names → copy verbatim, never alter.
+- Never add a job, project, skill, tool, technology, certification, or achievement that does not already appear in the original resume.
+- Never add or remove a section. Keep every section that exists; add no new ones (except a Summary if the original has none — see below).
+- Output must be ONE PAGE or shorter. Never make it longer than the original.
 
-What you MAY do:
-- Rephrase existing bullet points to use keywords and terminology from the JD (same meaning, better wording).
-- Reorder bullet points within a section to surface the most JD-relevant ones first.
-- Slightly strengthen the wording of existing achievements (e.g. add impact framing) only if the underlying fact is already stated.
-- Add a short 2–3 line professional summary at the top if the original has none, drawing only from content already in the resume.
+THE ONLY EDITS YOU MAY MAKE:
+1. Keyword substitution: swap a word/phrase in an existing bullet for a JD synonym (same meaning, JD language). Example: "built" → "developed" if JD uses "developed".
+2. Keyword insertion: add 1–2 JD keywords into an existing bullet only when they accurately describe what is already written there.
+3. Bullet reordering: within a single section, reorder bullets to put the most JD-relevant ones first. Do not move content between sections.
+4. Minor grammar/clarity: fix typos or awkward phrasing. Do not change meaning.
+5. Summary (only if original has none): write a 2-sentence summary using exclusively facts already present in the resume.
 
-Output format:
-- Clean Markdown, one page worth of content.
-- At the very end, add a "## Optimization Notes" section (3–5 bullet points) listing exactly what was changed and why.
+PROCESS:
+- Start from the original resume text. Make the minimum edits needed. When in doubt, leave the original wording unchanged.
+- If the original exceeds one page, trim the least relevant bullets (do not fabricate replacements).
 
-Respond ONLY with the optimized resume in Markdown. Do not include any preamble outside the Markdown.`;
+OUTPUT:
+- The edited resume in clean Markdown.
+- Then a "## Optimization Notes" section: list each changed line as "Original: … → Revised: …" (max 6 items).
+
+Respond ONLY with the Markdown resume + notes. No other text.`;
 
 /* ──────────────────────────────────────────────────────────
    THEME — centralised color tokens
@@ -596,7 +601,7 @@ export default function App() {
     if (!jd.trim())     { setError("Please paste a Job Description"); return; }
     if (!resumeText.trim()) { setError("Please upload or paste your resume content"); return; }
     setError(""); setLoading(true); setResult("");
-    const userMessage = `## Job Description\n\n${jd.trim()}\n\n---\n\n## Current Resume\n\n${resumeText.trim()}`;
+    const userMessage = `## Target Job Description\n\n${jd.trim()}\n\n---\n\n## Original Resume (do not change personal info, titles, companies, dates, or add anything not present here)\n\n${resumeText.trim()}`;
     try {
       const res = await fetch(ANTHROPIC_API_URL, {
         method: "POST",
