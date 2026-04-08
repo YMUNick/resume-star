@@ -15,6 +15,11 @@ import {
   Trash2, Settings, Star, Copy, Check, X, Info, Bot,
   Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink
 } from "lucide-react";
+import * as pdfjsLib from "pdfjs-dist";
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 /* ──────────────────────────────────────────────────────────
    CONSTANTS & CONFIG
@@ -99,30 +104,25 @@ function renderMarkdown(md) {
 /* ──────────────────────────────────────────────────────────
    UTILITY: Read uploaded file as text (PDF / MD / TXT)
    ────────────────────────────────────────────────────────── */
-function readFileAsText(file) {
+async function readFileAsText(file) {
+  if (file.name.endsWith(".pdf")) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => item.str).join(" ");
+      pages.push(pageText);
+    }
+    const text = pages.join("\n").trim();
+    return text || "[PDF text extraction failed — please try pasting the content as plain text]";
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    if (file.name.endsWith(".pdf")) {
-      reader.onload = (e) => {
-        try {
-          const bytes = new Uint8Array(e.target.result);
-          const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-          const matches = raw.match(/\(([^)]{1,500})\)/g);
-          let text = matches ? matches.map(m => m.slice(1, -1)).join(" ") : "";
-          if (text.trim().length < 50) {
-            text = raw.replace(/[^\x20-\x7E\n\r\t\u4e00-\u9fff\u3000-\u303f]/g, " ")
-              .replace(/\s{3,}/g, "\n").trim();
-          }
-          resolve(text || "[PDF text extraction failed — please try pasting the content as plain text]");
-        } catch { reject(new Error("Failed to read PDF file")); }
-      };
-      reader.onerror = () => reject(new Error("File read failed"));
-      reader.readAsArrayBuffer(file);
-    } else {
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = () => reject(new Error("File read failed"));
-      reader.readAsText(file);
-    }
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => reject(new Error("File read failed"));
+    reader.readAsText(file);
   });
 }
 
