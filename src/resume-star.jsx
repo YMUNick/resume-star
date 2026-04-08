@@ -324,8 +324,27 @@ function ResultPanel({ result, loading }) {
 /* ──────────────────────────────────────────────────────────
    UTILITY: LinkedIn guest API via CORS proxy (pure frontend)
    ────────────────────────────────────────────────────────── */
-const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+const CORS_PROXIES = [
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
 const jobSearchCache = new Map();
+
+async function proxyFetch(url, signal) {
+  let lastError;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const resp = await fetch(proxy(url), { signal });
+      if (resp.ok) return resp;
+      lastError = new Error(`Proxy error (${resp.status})`);
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error("All CORS proxies failed");
+}
 
 async function fetchLinkedInJobs(keywords, location, limit, signal) {
   const cacheKey = `${keywords}|${location}|${limit}`;
@@ -342,7 +361,7 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
   searchUrl.searchParams.set("start", "0");
   searchUrl.searchParams.set("count", String(limit));
 
-  const listResp = await fetch(CORS_PROXY + encodeURIComponent(searchUrl.toString()), { signal });
+  const listResp = await proxyFetch(searchUrl.toString(), signal);
   if (!listResp.ok) throw new Error(`Proxy error (${listResp.status})`);
   const listHtml = await listResp.text();
 
@@ -371,7 +390,7 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
       if (!jobId) return "";
       try {
         const detailUrl = `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`;
-        const resp = await fetch(CORS_PROXY + encodeURIComponent(detailUrl), { signal });
+        const resp = await proxyFetch(detailUrl, signal);
         if (!resp.ok) return "";
         const html = await resp.text();
         const detail = parser.parseFromString(html, "text/html");
