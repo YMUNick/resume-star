@@ -339,14 +339,14 @@ function LinkedInSearchPanel({ setJd }) {
     try {
       const params = new URLSearchParams({ keywords: keywords.trim(), limit: "10" });
       if (location.trim()) params.set("location", location.trim());
-      const res = await fetch(`http://localhost:8000/api/jobs?${params}`);
+      const res = await fetch(`http://localhost:8080/api/jobs?${params}`);
       if (!res.ok) throw new Error(`Server error (${res.status})`);
       const data = await res.json();
       setJobs(data);
       if (data.length === 0) setError("No jobs found. Try different keywords.");
     } catch (err) {
       if (err.name === "TypeError") {
-        setError('Could not connect to the local job search server. Run: cd backend && python -m uvicorn main:app --reload');
+        setError('Could not connect to the local job search server. Run: cd backend && python -m uvicorn main:app --reload --port 8080');
       } else {
         setError(err.message);
       }
