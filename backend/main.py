@@ -48,7 +48,7 @@ def scrape_linkedin_jobs(keywords: str, location: str, limit: int) -> List[Dict[
             "title": data.title or "",
             "company": data.company or "",
             "location": data.place or "",
-            "date": data.date_text or data.date or "",
+            "date": str(data.date.strftime("%b %d, %Y") if data.date else ""),
             "job_type": job_type,
             "salary": "",
             "description": (data.description or "")[:300],
