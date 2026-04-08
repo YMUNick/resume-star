@@ -375,7 +375,7 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
         if (!resp.ok) return "";
         const html = await resp.text();
         const detail = parser.parseFromString(html, "text/html");
-        return detail.querySelector(".description__text")?.textContent?.trim().slice(0, 1500) || "";
+        return detail.querySelector(".description__text")?.textContent?.trim() || "";
       } catch {
         return "";
       }
