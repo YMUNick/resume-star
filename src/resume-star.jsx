@@ -399,8 +399,10 @@ async function proxyFetch(url, signal) {
   throw lastError ?? new Error("All CORS proxies failed");
 }
 
-async function fetchLinkedInJobs(keywords, location, limit, signal) {
-  const cacheKey = `${keywords}|${location}|${limit}`;
+const PAGE_SIZE = 10;
+
+async function fetchLinkedInJobs(keywords, location, start, signal) {
+  const cacheKey = `${keywords}|${location}|${start}`;
   if (jobSearchCache.has(cacheKey)) return jobSearchCache.get(cacheKey);
 
   const parser = new DOMParser();
@@ -410,15 +412,15 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
   );
   searchUrl.searchParams.set("keywords", keywords);
   if (location) searchUrl.searchParams.set("location", location);
-  searchUrl.searchParams.set("start", "0");
-  searchUrl.searchParams.set("count", String(limit));
+  searchUrl.searchParams.set("start", String(start));
+  searchUrl.searchParams.set("count", String(PAGE_SIZE));
 
   const listResp = await proxyFetch(searchUrl.toString(), signal);
   if (!listResp.ok) throw new Error(`Proxy error (${listResp.status})`);
   const listHtml = await listResp.text();
 
   const doc = parser.parseFromString(listHtml, "text/html");
-  const cards = Array.from(doc.querySelectorAll(".base-card")).slice(0, limit);
+  const cards = Array.from(doc.querySelectorAll(".base-card")).slice(0, PAGE_SIZE);
 
   const jobIds = cards.map((card) => (card.dataset.entityUrn || "").split(":").pop());
   const jobs = cards.map((card) => {
@@ -508,34 +510,62 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
   const [location, setLocation] = useState("");
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [filledIdx, setFilledIdx] = useState(null);
   const [scores, setScores] = useState([]);
   const [scoring, setScoring] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextStart, setNextStart] = useState(0);
   const abortRef = useRef(null);
+
+  const triggerScoring = (newJobs, allScores) => {
+    if (!resumeText?.trim() || !apiKey?.trim()) return;
+    setScoring(true);
+    scoreJobsAgainstResume(newJobs, resumeText, apiKey)
+      .then((s) => { if (s) setScores((prev) => [...(allScores ?? prev), ...s]); })
+      .catch(() => {})
+      .finally(() => setScoring(false));
+  };
 
   const handleSearch = async () => {
     if (!keywords.trim()) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    setError(""); setJobs([]); setScores([]); setLoading(true); setFilledIdx(null);
+    setError(""); setJobs([]); setScores([]); setHasMore(false); setLoading(true); setFilledIdx(null);
     try {
-      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10, controller.signal);
+      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 0, controller.signal);
       setJobs(data);
       if (data.length === 0) { setError("No jobs found. Try different keywords."); return; }
-      if (resumeText?.trim() && apiKey?.trim()) {
-        setScoring(true);
-        scoreJobsAgainstResume(data, resumeText, apiKey)
-          .then((s) => { if (s) setScores(s); })
-          .catch(() => {})
-          .finally(() => setScoring(false));
-      }
+      setHasMore(data.length === PAGE_SIZE);
+      setNextStart(PAGE_SIZE);
+      triggerScoring(data, []);
     } catch (err) {
       if (err.name === "AbortError") return;
       setError(`Search failed: ${err?.message ?? "unknown error"}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoadingMore(true);
+    try {
+      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), nextStart, controller.signal);
+      if (data.length === 0) { setHasMore(false); return; }
+      setJobs((prev) => [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+      setNextStart((prev) => prev + PAGE_SIZE);
+      triggerScoring(data, null);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setError(`Load more failed: ${err?.message ?? "unknown error"}`);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -694,6 +724,25 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
                   </div>
                 </div>
               ))}
+
+              {/* Load More */}
+              {hasMore && (
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="w-full py-3 rounded-2xl text-sm font-medium transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: T.sectionBg, color: T.accent, letterSpacing: "-0.374px",
+                    border: `1px solid ${T.inputBorder}` }}>
+                  {loadingMore
+                    ? <><Loader2 size={15} className="animate-spin" /> Loading more…</>
+                    : <>Load More</>}
+                </button>
+              )}
+              {!hasMore && jobs.length > 0 && !loading && (
+                <p className="text-center text-xs py-2" style={{ color: T.textDim, letterSpacing: "-0.12px" }}>
+                  No more results
+                </p>
+              )}
             </div>
           )}
         </div>
