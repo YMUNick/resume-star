@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
-linkedin-jobs-scraper
-playwright
-pytest
+requests
 httpx
+beautifulsoup4
+lxml
+pytest
