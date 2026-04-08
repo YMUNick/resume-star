@@ -419,9 +419,51 @@ async function fetchLinkedInJobs(keywords, location, limit, signal) {
 }
 
 /* ──────────────────────────────────────────────────────────
+   UTILITY: Batch-score jobs against resume via Claude
+   ────────────────────────────────────────────────────────── */
+async function scoreJobsAgainstResume(jobs, resumeText, apiKey) {
+  const jobList = jobs.map((j, i) =>
+    `${i + 1}. Title: ${j.title} | Company: ${j.company}\nDescription: ${j.description?.slice(0, 400) || "(no description)"}`
+  ).join("\n\n");
+
+  const prompt = `Resume (excerpt):\n${resumeText.slice(0, 2000)}\n\n---\n\nJob Postings:\n${jobList}\n\n---\n\nScore each job's fit to this resume on a scale of 1–10. For each job consider:\n1. Domain/field alignment (industry, tech stack, role type)\n2. Years of experience match (JD requirement vs. resume work history)\n\nReturn ONLY a JSON array of integers, one per job, in the same order. Example: [7,4,9,3,8]`;
+
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: 150,
+      messages: [{ role: "user", content: prompt }] }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const text = data.content?.map(b => b.type === "text" ? b.text : "").join("") || "";
+  const match = text.match(/\[[\d,\s]+\]/);
+  if (!match) return null;
+  return JSON.parse(match[0]);
+}
+
+function ScoreBadge({ score }) {
+  if (score == null) return null;
+  const color = score >= 8 ? "#4ADE80" : score >= 5 ? "#FBBF24" : "#F87171";
+  const bg    = score >= 8 ? "rgba(74,222,128,0.12)" : score >= 5 ? "rgba(251,191,36,0.12)" : "rgba(248,113,113,0.12)";
+  return (
+    <span title={`Match score: ${score}/10`}
+      className="inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+      style={{ background: bg, color }}>
+      {score}<span className="font-normal opacity-70">/10</span>
+    </span>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────
    COMPONENT: LinkedIn Job Search Panel
    ────────────────────────────────────────────────────────── */
-function LinkedInSearchPanel({ setJd }) {
+function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
   const [open, setOpen] = useState(false);
   const [keywords, setKeywords] = useState("");
   const [location, setLocation] = useState("");
@@ -429,6 +471,8 @@ function LinkedInSearchPanel({ setJd }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [filledIdx, setFilledIdx] = useState(null);
+  const [scores, setScores] = useState([]);
+  const [scoring, setScoring] = useState(false);
   const abortRef = useRef(null);
 
   const handleSearch = async () => {
@@ -436,11 +480,19 @@ function LinkedInSearchPanel({ setJd }) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    setError(""); setJobs([]); setLoading(true); setFilledIdx(null);
+    setError(""); setJobs([]); setScores([]); setLoading(true); setFilledIdx(null);
     try {
       const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10, controller.signal);
       setJobs(data);
-      if (data.length === 0) setError("No jobs found. Try different keywords.");
+      if (data.length === 0) { setError("No jobs found. Try different keywords."); return; }
+      // Kick off scoring in background if resume + key available
+      if (resumeText?.trim() && apiKey?.trim()) {
+        setScoring(true);
+        scoreJobsAgainstResume(data, resumeText, apiKey)
+          .then((s) => { if (s) setScores(s); })
+          .catch(() => {})
+          .finally(() => setScoring(false));
+      }
     } catch (err) {
       if (err.name === "AbortError") return;
       setError(`Search failed: ${err?.message ?? "unknown error"}`);
@@ -517,6 +569,13 @@ function LinkedInSearchPanel({ setJd }) {
             </div>
           )}
 
+          {/* Scoring indicator */}
+          {scoring && (
+            <p className="text-xs flex items-center gap-1.5" style={{ color: T.textMuted }}>
+              <Loader2 size={12} className="animate-spin" /> Calculating match scores…
+            </p>
+          )}
+
           {/* Results */}
           {jobs.length > 0 && (
             <div className="space-y-3">
@@ -529,7 +588,10 @@ function LinkedInSearchPanel({ setJd }) {
                   {/* Title row */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-sm" style={{ color: T.textPrimary }}>{job.title}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-sm" style={{ color: T.textPrimary }}>{job.title}</p>
+                        <ScoreBadge score={scores[idx]} />
+                      </div>
                       <p className="text-xs mt-0.5" style={{ color: T.textBody }}>{job.company}</p>
                     </div>
                     {job.job_type && (
@@ -676,7 +738,7 @@ export default function App() {
       {/* Main */}
       <main className="relative z-10 max-w-7xl mx-auto px-5 py-8">
         <div className="mb-4"><ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} /></div>
-        <div className="mb-8"><LinkedInSearchPanel setJd={setJd} /></div>
+        <div className="mb-8"><LinkedInSearchPanel setJd={setJd} apiKey={apiKey} resumeText={resumeText} /></div>
 
         {/* Inputs row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
