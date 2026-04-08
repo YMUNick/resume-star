@@ -617,7 +617,7 @@ export default function App() {
 
       {/* Header */}
       <header className="relative z-10 border-b" style={{ borderColor: T.cardBorder }}>
-        <div className="max-w-6xl mx-auto px-5 py-5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: `linear-gradient(135deg, #0284C7, ${T.accent2})` }}>
@@ -640,60 +640,59 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="relative z-10 max-w-6xl mx-auto px-5 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-5 py-8">
         <div className="mb-4"><ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} /></div>
         <div className="mb-8"><LinkedInSearchPanel setJd={setJd} /></div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left — Inputs */}
-          <div className="space-y-6">
-            <div className="rounded-2xl border p-5 space-y-3" style={{ borderColor: T.cardBorder, background: T.card }}>
-              <label className="text-sm font-semibold flex items-center gap-2" style={{ color: T.textPrimary }}>
-                <FileText size={15} color={T.accent2} /> Job Description
-              </label>
-              <textarea value={jd} onChange={(e) => setJd(e.target.value)} rows={10}
-                placeholder={"Paste the target job description here...\n\nExample:\nWe are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript..."}
-                className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all focus:ring-2 focus:ring-violet-400/50"
-                style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary, minHeight: "200px" }} />
-              {jd.length > 0 && <p className="text-xs text-right" style={{ color: T.textMuted }}>{jd.length} chars</p>}
-            </div>
-
-            <div className="rounded-2xl border p-5" style={{ borderColor: T.cardBorder, background: T.card }}>
-              <FileUploadArea file={file} setFile={setFile} resumeText={resumeText} setResumeText={setResumeText} />
-              {resumeText && (
-                <p className="mt-3 text-xs" style={{ color: T.textMuted }}>
-                  <CheckCircle2 size={12} className="inline mr-1" color={T.success} /> {resumeText.length} characters extracted
-                </p>
-              )}
-            </div>
-
-            <button onClick={handleOptimize} disabled={!canSubmit}
-              className="w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.99]"
-              style={{
-                background: canSubmit ? `linear-gradient(135deg, #0284C7, ${T.accent2})` : T.cardBorder,
-                color: canSubmit ? "#fff" : T.textDim,
-                boxShadow: canSubmit ? `0 4px 24px ${T.accentDim}` : "none",
-              }}>
-              {loading ? <><Loader2 size={18} className="animate-spin" /> Optimizing...</> : <><Sparkles size={18} /> Optimize with AI</>}
-            </button>
-            <p className="text-center text-xs" style={{ color: T.textDim }}>⌘ / Ctrl + Enter to submit</p>
-
-            {error && (
-              <div className="rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
-                style={{ background: T.errorBg, border: `1px solid rgba(248,113,113,0.2)`, color: "#fecaca" }}>
-                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" color={T.error} />
-                <div>
-                  <p className="font-medium" style={{ color: T.error }}>Error</p>
-                  <p className="mt-0.5">{error}</p>
-                </div>
-                <button onClick={() => setError("")} className="ml-auto flex-shrink-0 mt-0.5"><X size={14} color={T.error} /></button>
-              </div>
-            )}
+        {/* Inputs row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="rounded-2xl border p-5 space-y-3" style={{ borderColor: T.cardBorder, background: T.card }}>
+            <label className="text-sm font-semibold flex items-center gap-2" style={{ color: T.textPrimary }}>
+              <FileText size={15} color={T.accent2} /> Job Description
+            </label>
+            <textarea value={jd} onChange={(e) => setJd(e.target.value)} rows={10}
+              placeholder={"Paste the target job description here...\n\nExample:\nWe are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript..."}
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all focus:ring-2 focus:ring-violet-400/50"
+              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary, minHeight: "200px" }} />
+            {jd.length > 0 && <p className="text-xs text-right" style={{ color: T.textMuted }}>{jd.length} chars</p>}
           </div>
 
-          {/* Right — Output */}
-          <div><ResultPanel result={result} loading={loading} /></div>
+          <div className="rounded-2xl border p-5" style={{ borderColor: T.cardBorder, background: T.card }}>
+            <FileUploadArea file={file} setFile={setFile} resumeText={resumeText} setResumeText={setResumeText} />
+            {resumeText && (
+              <p className="mt-3 text-xs" style={{ color: T.textMuted }}>
+                <CheckCircle2 size={12} className="inline mr-1" color={T.success} /> {resumeText.length} characters extracted
+              </p>
+            )}
+          </div>
         </div>
+
+        {/* Optimize button */}
+        <button onClick={handleOptimize} disabled={!canSubmit}
+          className="w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.99]"
+          style={{
+            background: canSubmit ? `linear-gradient(135deg, #0284C7, ${T.accent2})` : T.cardBorder,
+            color: canSubmit ? "#fff" : T.textDim,
+            boxShadow: canSubmit ? `0 4px 24px ${T.accentDim}` : "none",
+          }}>
+          {loading ? <><Loader2 size={18} className="animate-spin" /> Optimizing...</> : <><Sparkles size={18} /> Optimize with AI</>}
+        </button>
+        <p className="text-center text-xs mt-2" style={{ color: T.textDim }}>⌘ / Ctrl + Enter to submit</p>
+
+        {error && (
+          <div className="mt-4 rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
+            style={{ background: T.errorBg, border: `1px solid rgba(248,113,113,0.2)`, color: "#fecaca" }}>
+            <AlertCircle size={16} className="mt-0.5 flex-shrink-0" color={T.error} />
+            <div>
+              <p className="font-medium" style={{ color: T.error }}>Error</p>
+              <p className="mt-0.5">{error}</p>
+            </div>
+            <button onClick={() => setError("")} className="ml-auto flex-shrink-0 mt-0.5"><X size={14} color={T.error} /></button>
+          </div>
+        )}
+
+        {/* Result — full width below button */}
+        <div className="mt-6"><ResultPanel result={result} loading={loading} /></div>
 
         {/* Tips */}
         <div className="mt-12 rounded-2xl border p-6" style={{ borderColor: T.cardBorder, background: T.card }}>
