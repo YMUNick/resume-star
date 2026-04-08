@@ -325,8 +325,12 @@ function ResultPanel({ result, loading }) {
    UTILITY: LinkedIn guest API via CORS proxy (pure frontend)
    ────────────────────────────────────────────────────────── */
 const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+const jobSearchCache = new Map();
 
-async function fetchLinkedInJobs(keywords, location, limit) {
+async function fetchLinkedInJobs(keywords, location, limit, signal) {
+  const cacheKey = `${keywords}|${location}|${limit}`;
+  if (jobSearchCache.has(cacheKey)) return jobSearchCache.get(cacheKey);
+
   const parser = new DOMParser();
 
   // Step 1: fetch job listing
@@ -338,17 +342,16 @@ async function fetchLinkedInJobs(keywords, location, limit) {
   searchUrl.searchParams.set("start", "0");
   searchUrl.searchParams.set("count", String(limit));
 
-  const listResp = await fetch(CORS_PROXY + encodeURIComponent(searchUrl.toString()));
+  const listResp = await fetch(CORS_PROXY + encodeURIComponent(searchUrl.toString()), { signal });
   if (!listResp.ok) throw new Error(`Proxy error (${listResp.status})`);
   const listHtml = await listResp.text();
 
-  // Step 2: parse job cards
+  // Step 2: parse job cards — extract jobIds separately (internal, not in return shape)
   const doc = parser.parseFromString(listHtml, "text/html");
   const cards = Array.from(doc.querySelectorAll(".base-card")).slice(0, limit);
 
+  const jobIds = cards.map((card) => (card.dataset.entityUrn || "").split(":").pop());
   const jobs = cards.map((card) => {
-    const urn = card.dataset.entityUrn || "";
-    const jobId = urn.split(":").pop();
     const link = card.querySelector("a.base-card__full-link");
     return {
       title:    card.querySelector(".base-search-card__title")?.textContent?.trim()    || "",
@@ -359,17 +362,16 @@ async function fetchLinkedInJobs(keywords, location, limit) {
       salary:   "",
       description: "",
       url:      link ? link.href.split("?")[0] : "",
-      jobId,
     };
   });
 
   // Step 3: fetch all descriptions in parallel
   const descriptions = await Promise.all(
-    jobs.map(async ({ jobId }) => {
+    jobIds.map(async (jobId) => {
       if (!jobId) return "";
       try {
         const detailUrl = `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`;
-        const resp = await fetch(CORS_PROXY + encodeURIComponent(detailUrl));
+        const resp = await fetch(CORS_PROXY + encodeURIComponent(detailUrl), { signal });
         if (!resp.ok) return "";
         const html = await resp.text();
         const detail = parser.parseFromString(html, "text/html");
@@ -380,16 +382,9 @@ async function fetchLinkedInJobs(keywords, location, limit) {
     })
   );
 
-  return jobs.map((job, i) => ({
-    title:       job.title,
-    company:     job.company,
-    location:    job.location,
-    date:        job.date,
-    job_type:    job.job_type,
-    salary:      job.salary,
-    description: descriptions[i],
-    url:         job.url,
-  }));
+  const results = jobs.map((job, i) => ({ ...job, description: descriptions[i] }));
+  jobSearchCache.set(cacheKey, results);
+  return results;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -403,16 +398,21 @@ function LinkedInSearchPanel({ setJd }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [filledIdx, setFilledIdx] = useState(null);
+  const abortRef = useRef(null);
 
   const handleSearch = async () => {
     if (!keywords.trim()) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setError(""); setJobs([]); setLoading(true); setFilledIdx(null);
     try {
-      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10);
+      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10, controller.signal);
       setJobs(data);
       if (data.length === 0) setError("No jobs found. Try different keywords.");
     } catch (err) {
-      setError("Search failed: " + err.message);
+      if (err.name === "AbortError") return;
+      setError(`Search failed: ${err?.message ?? "unknown error"}`);
     } finally {
       setLoading(false);
     }
