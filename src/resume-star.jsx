@@ -419,8 +419,8 @@ function LinkedInSearchPanel({ setJd }) {
   };
 
   const handleFillJd = (job, idx) => {
-    setJd(job.description);
     setFilledIdx(idx);
+    setJd(job.description);
   };
 
   return (
@@ -490,8 +490,11 @@ function LinkedInSearchPanel({ setJd }) {
           {jobs.length > 0 && (
             <div className="space-y-3">
               {jobs.map((job, idx) => (
-                <div key={idx} className="rounded-xl border p-4 space-y-2"
-                  style={{ borderColor: T.cardBorder, background: T.inputBg }}>
+                <div key={idx} className="rounded-xl border p-4 space-y-2 transition-all"
+                  style={{
+                    borderColor: filledIdx === idx ? T.success : T.cardBorder,
+                    background: filledIdx === idx ? "rgba(74,222,128,0.05)" : T.inputBg,
+                  }}>
                   {/* Title row */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
