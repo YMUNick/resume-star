@@ -519,15 +519,6 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
   const [nextStart, setNextStart] = useState(0);
   const abortRef = useRef(null);
 
-  const triggerScoring = (newJobs, allScores) => {
-    if (!resumeText?.trim() || !apiKey?.trim()) return;
-    setScoring(true);
-    scoreJobsAgainstResume(newJobs, resumeText, apiKey)
-      .then((s) => { if (s) setScores((prev) => [...(allScores ?? prev), ...s]); })
-      .catch(() => {})
-      .finally(() => setScoring(false));
-  };
-
   const handleSearch = async () => {
     if (!keywords.trim()) return;
     abortRef.current?.abort();
@@ -540,7 +531,13 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
       if (data.length === 0) { setError("No jobs found. Try different keywords."); return; }
       setHasMore(data.length === PAGE_SIZE);
       setNextStart(PAGE_SIZE);
-      triggerScoring(data, []);
+      if (resumeText?.trim() && apiKey?.trim()) {
+        setScoring(true);
+        scoreJobsAgainstResume(data, resumeText, apiKey)
+          .then((s) => { if (s) setScores(s); })
+          .catch(() => {})
+          .finally(() => setScoring(false));
+      }
     } catch (err) {
       if (err.name === "AbortError") return;
       setError(`Search failed: ${err?.message ?? "unknown error"}`);
@@ -550,7 +547,6 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
   };
 
   const handleLoadMore = async () => {
-    abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoadingMore(true);
@@ -560,7 +556,13 @@ function LinkedInSearchPanel({ setJd, apiKey, resumeText }) {
       setJobs((prev) => [...prev, ...data]);
       setHasMore(data.length === PAGE_SIZE);
       setNextStart((prev) => prev + PAGE_SIZE);
-      triggerScoring(data, null);
+      if (resumeText?.trim() && apiKey?.trim()) {
+        setScoring(true);
+        scoreJobsAgainstResume(data, resumeText, apiKey)
+          .then((s) => { if (s) setScores((prev) => [...prev, ...s]); })
+          .catch(() => {})
+          .finally(() => setScoring(false));
+      }
     } catch (err) {
       if (err.name === "AbortError") return;
       setError(`Load more failed: ${err?.message ?? "unknown error"}`);
