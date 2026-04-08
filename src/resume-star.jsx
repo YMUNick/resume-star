@@ -322,6 +322,77 @@ function ResultPanel({ result, loading }) {
 }
 
 /* ──────────────────────────────────────────────────────────
+   UTILITY: LinkedIn guest API via CORS proxy (pure frontend)
+   ────────────────────────────────────────────────────────── */
+const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+
+async function fetchLinkedInJobs(keywords, location, limit) {
+  const parser = new DOMParser();
+
+  // Step 1: fetch job listing
+  const searchUrl = new URL(
+    "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+  );
+  searchUrl.searchParams.set("keywords", keywords);
+  if (location) searchUrl.searchParams.set("location", location);
+  searchUrl.searchParams.set("start", "0");
+  searchUrl.searchParams.set("count", String(limit));
+
+  const listResp = await fetch(CORS_PROXY + encodeURIComponent(searchUrl.toString()));
+  if (!listResp.ok) throw new Error(`Proxy error (${listResp.status})`);
+  const listHtml = await listResp.text();
+
+  // Step 2: parse job cards
+  const doc = parser.parseFromString(listHtml, "text/html");
+  const cards = Array.from(doc.querySelectorAll(".base-card")).slice(0, limit);
+
+  const jobs = cards.map((card) => {
+    const urn = card.dataset.entityUrn || "";
+    const jobId = urn.split(":").pop();
+    const link = card.querySelector("a.base-card__full-link");
+    return {
+      title:    card.querySelector(".base-search-card__title")?.textContent?.trim()    || "",
+      company:  card.querySelector(".base-search-card__subtitle")?.textContent?.trim() || "",
+      location: card.querySelector(".job-search-card__location")?.textContent?.trim()  || "",
+      date:     card.querySelector("time")?.textContent?.trim()                        || "",
+      job_type: "",
+      salary:   "",
+      description: "",
+      url:      link ? link.href.split("?")[0] : "",
+      jobId,
+    };
+  });
+
+  // Step 3: fetch all descriptions in parallel
+  const descriptions = await Promise.all(
+    jobs.map(async ({ jobId }) => {
+      if (!jobId) return "";
+      try {
+        const detailUrl = `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`;
+        const resp = await fetch(CORS_PROXY + encodeURIComponent(detailUrl));
+        if (!resp.ok) return "";
+        const html = await resp.text();
+        const detail = parser.parseFromString(html, "text/html");
+        return detail.querySelector(".description__text")?.textContent?.trim().slice(0, 1500) || "";
+      } catch {
+        return "";
+      }
+    })
+  );
+
+  return jobs.map((job, i) => ({
+    title:       job.title,
+    company:     job.company,
+    location:    job.location,
+    date:        job.date,
+    job_type:    job.job_type,
+    salary:      job.salary,
+    description: descriptions[i],
+    url:         job.url,
+  }));
+}
+
+/* ──────────────────────────────────────────────────────────
    COMPONENT: LinkedIn Job Search Panel
    ────────────────────────────────────────────────────────── */
 function LinkedInSearchPanel({ setJd }) {
@@ -337,19 +408,11 @@ function LinkedInSearchPanel({ setJd }) {
     if (!keywords.trim()) return;
     setError(""); setJobs([]); setLoading(true); setFilledIdx(null);
     try {
-      const params = new URLSearchParams({ keywords: keywords.trim(), limit: "10" });
-      if (location.trim()) params.set("location", location.trim());
-      const res = await fetch(`http://localhost:8080/api/jobs?${params}`);
-      if (!res.ok) throw new Error(`Server error (${res.status})`);
-      const data = await res.json();
+      const data = await fetchLinkedInJobs(keywords.trim(), location.trim(), 10);
       setJobs(data);
       if (data.length === 0) setError("No jobs found. Try different keywords.");
     } catch (err) {
-      if (err.name === "TypeError") {
-        setError('Could not connect to the local job search server. Run: cd backend && python -m uvicorn main:app --reload --port 8080');
-      } else {
-        setError(err.message);
-      }
+      setError("Search failed: " + err.message);
     } finally {
       setLoading(false);
     }
