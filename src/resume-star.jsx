@@ -611,20 +611,23 @@ export default function App() {
           messages: [{ role: "user", content: userMessage }] }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        const msg = err?.error?.message || "";
-        if (res.status === 401) throw new Error("Invalid or expired API Key. Please check and update it.");
-        if (res.status === 429) throw new Error("Too many requests. Please try again later." + (msg ? ` (${msg})` : ""));
-        if (res.status === 400 && msg.toLowerCase().includes("token")) throw new Error("Input is too long. Please shorten your resume or JD and try again.");
-        throw new Error(`API error (${res.status}): ${msg || "Unknown error"}`);
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody?.error?.message || "";
+        if (res.status === 401) throw new Error("Invalid or expired API Key — please check and update it.");
+        if (res.status === 429) throw new Error("Rate limit reached. You've sent too many requests in a short time. Please wait 30–60 seconds and try again.");
+        if (res.status === 529) throw new Error("Claude API is overloaded right now. Please wait a moment and try again.");
+        if (res.status === 400 && msg.toLowerCase().includes("token")) throw new Error("Input is too long. Please shorten your resume or job description and try again.");
+        throw new Error(`API error (${res.status})${msg ? `: ${msg}` : ""}`);
       }
       const data = await res.json();
       const text = data.content?.map(b => b.type === "text" ? b.text : "").join("") || "";
       if (!text.trim()) throw new Error("AI returned an empty response. Please try again.");
       setResult(text);
     } catch (err) {
-      setError(err.name === "TypeError" && err.message.includes("fetch")
-        ? "Network error — the browser may be blocking the request due to CORS. Try running locally or use a proxy." : err.message);
+      const message = err?.message || String(err) || "Unknown error";
+      setError(err.name === "TypeError" && message.includes("fetch")
+        ? "Network error — the browser may be blocking the request due to CORS."
+        : message);
     } finally { setLoading(false); }
   }, [apiKey, jd, resumeText]);
 
