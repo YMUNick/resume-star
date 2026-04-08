@@ -56,7 +56,7 @@ def scrape_linkedin_jobs(keywords: str, location: str, limit: int) -> List[Dict[
         })
 
     def on_error(error):
-        pass
+        print(f"[linkedin-scraper] error: {error}")
 
     scraper.on(Events.DATA, on_data)
     scraper.on(Events.ERROR, on_error)
@@ -81,7 +81,7 @@ async def get_jobs(
     limit: int = Query(default=10, ge=1, le=25),
 ):
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         jobs = await loop.run_in_executor(
             None, scrape_linkedin_jobs, keywords, location or "", limit
         )
