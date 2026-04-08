@@ -12,7 +12,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   KeyRound, Upload, FileText, Sparkles, Download, Eye,
   ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Loader2,
-  Trash2, Settings, Star, Copy, Check, X, Info, Bot
+  Trash2, Settings, Star, Copy, Check, X, Info, Bot,
+  Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────
@@ -321,6 +322,170 @@ function ResultPanel({ result, loading }) {
 }
 
 /* ──────────────────────────────────────────────────────────
+   COMPONENT: LinkedIn Job Search Panel
+   ────────────────────────────────────────────────────────── */
+function LinkedInSearchPanel({ setJd }) {
+  const [open, setOpen] = useState(false);
+  const [keywords, setKeywords] = useState("");
+  const [location, setLocation] = useState("");
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [filledIdx, setFilledIdx] = useState(null);
+
+  const handleSearch = async () => {
+    if (!keywords.trim()) return;
+    setError(""); setJobs([]); setLoading(true); setFilledIdx(null);
+    try {
+      const params = new URLSearchParams({ keywords: keywords.trim(), limit: "10" });
+      if (location.trim()) params.set("location", location.trim());
+      const res = await fetch(`http://localhost:8000/api/jobs?${params}`);
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      const data = await res.json();
+      setJobs(data);
+      if (data.length === 0) setError("No jobs found. Try different keywords.");
+    } catch (err) {
+      if (err.name === "TypeError") {
+        setError('Could not connect to the local job search server. Run: cd backend && python -m uvicorn main:app --reload');
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFillJd = (job, idx) => {
+    setJd(job.description);
+    setFilledIdx(idx);
+  };
+
+  return (
+    <div style={{ background: T.card, borderColor: T.cardBorder }} className="rounded-2xl border overflow-hidden">
+      {/* Header toggle */}
+      <button onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-3.5 transition-colors hover:brightness-110">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: "rgba(167,139,250,0.12)" }}>
+            <Briefcase size={16} color={T.accent2} />
+          </div>
+          <span className="font-semibold text-sm" style={{ color: T.textPrimary }}>
+            LinkedIn Job Search
+            {jobs.length > 0 && (
+              <span className="ml-2 text-xs font-normal" style={{ color: T.accent2 }}>
+                {jobs.length} results
+              </span>
+            )}
+          </span>
+        </div>
+        {open ? <ChevronUp size={16} color={T.textMuted} /> : <ChevronDown size={16} color={T.textMuted} />}
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 pt-1 space-y-4">
+          {/* Search inputs */}
+          <div className="flex gap-2 flex-wrap">
+            <input
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Job title or keywords (e.g. Senior React Engineer)"
+              className="flex-1 min-w-[200px] rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-violet-400/50"
+              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary }}
+            />
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Location (optional)"
+              className="w-44 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-violet-400/50"
+              style={{ background: T.inputBg, border: `1px solid ${T.cardBorder}`, color: T.textPrimary }}
+            />
+            <button
+              onClick={handleSearch}
+              disabled={!keywords.trim() || loading}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              style={{ background: T.accent2, color: "#fff" }}>
+              {loading
+                ? <><Loader2 size={15} className="animate-spin" /> Searching...</>
+                : <><Search size={15} /> Search Jobs</>}
+            </button>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
+              style={{ background: T.errorBg, border: `1px solid rgba(248,113,113,0.2)`, color: "#fecaca" }}>
+              <AlertCircle size={15} className="mt-0.5 flex-shrink-0" color={T.error} />
+              <p style={{ color: T.error }}>{error}</p>
+              <button onClick={() => setError("")} className="ml-auto"><X size={13} color={T.error} /></button>
+            </div>
+          )}
+
+          {/* Results */}
+          {jobs.length > 0 && (
+            <div className="space-y-3">
+              {jobs.map((job, idx) => (
+                <div key={idx} className="rounded-xl border p-4 space-y-2"
+                  style={{ borderColor: T.cardBorder, background: T.inputBg }}>
+                  {/* Title row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-sm" style={{ color: T.textPrimary }}>{job.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: T.textBody }}>{job.company}</p>
+                    </div>
+                    {job.job_type && (
+                      <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: T.accentDim, color: T.accent }}>{job.job_type}</span>
+                    )}
+                  </div>
+                  {/* Meta row */}
+                  <div className="flex flex-wrap gap-3 text-xs" style={{ color: T.textMuted }}>
+                    {job.location && (
+                      <span className="flex items-center gap-1"><MapPin size={11} />{job.location}</span>
+                    )}
+                    {job.date && (
+                      <span className="flex items-center gap-1"><Calendar size={11} />{job.date}</span>
+                    )}
+                    {job.salary && (
+                      <span className="flex items-center gap-1"><DollarSign size={11} />{job.salary}</span>
+                    )}
+                  </div>
+                  {/* Description snippet */}
+                  {job.description && (
+                    <p className="text-xs leading-relaxed line-clamp-2" style={{ color: T.textMuted }}>
+                      "{job.description}"
+                    </p>
+                  )}
+                  {/* Action buttons */}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => handleFillJd(job, idx)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110 active:scale-95"
+                      style={{ background: filledIdx === idx ? "rgba(74,222,128,0.12)" : T.accentDim, color: filledIdx === idx ? T.success : T.accent }}>
+                      {filledIdx === idx ? <><Check size={12} /> Filled</> : <><FileText size={12} /> Fill JD</>}
+                    </button>
+                    <a
+                      href={job.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-white/5"
+                      style={{ color: T.textMuted, border: `1px solid ${T.cardBorder}` }}>
+                      <ExternalLink size={12} /> View on LinkedIn
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────
    MAIN APP
    ────────────────────────────────────────────────────────── */
 export default function App() {
@@ -410,7 +575,8 @@ export default function App() {
 
       {/* Main */}
       <main className="relative z-10 max-w-6xl mx-auto px-5 py-8">
-        <div className="mb-8"><ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} /></div>
+        <div className="mb-4"><ApiKeyPanel apiKey={apiKey} setApiKey={setApiKey} /></div>
+        <div className="mb-8"><LinkedInSearchPanel setJd={setJd} /></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left — Inputs */}
