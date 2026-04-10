@@ -2,12 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/Resume_Star.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Resume Star</title>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        pointer-events: none;
+        animation: splashFade 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      #splash img {
+        width: 108px;
+        height: 108px;
+        object-fit: contain;
+        animation: splashLogo 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes splashFade {
+        0%   { opacity: 1; }
+        55%  { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      @keyframes splashLogo {
+        0%   { opacity: 1; transform: scale(1); }
+        55%  { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.88); }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash">
+      <img src="/Resume_Star.png" alt="Resume Star" />
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      setTimeout(function () {
+        var s = document.getElementById('splash');
+        if (s) s.remove();
+      }, 1700);
+    </script>
   </body>
 </html>
