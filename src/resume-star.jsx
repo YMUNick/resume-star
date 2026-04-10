@@ -821,8 +821,8 @@ export default function App() {
         <div className="max-w-[980px] mx-auto px-5 h-12 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Star size={17} color="#fff" fill="#fff" />
-            <span className="text-sm font-medium text-white" style={{ letterSpacing: "-0.374px" }}>
-              Resume Star
+            <span className="nav-title-glow-wrap text-sm font-medium" style={{ letterSpacing: "-0.374px" }}>
+              <span className="nav-title-glow">Resume Star</span>
             </span>
           </div>
           <a href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener noreferrer"
