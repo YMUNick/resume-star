@@ -837,10 +837,12 @@ export default function App() {
       <section style={{ background: "#000000" }}>
         <div className="max-w-[980px] mx-auto px-5 py-16 text-center">
           <h1 style={{
-            fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 600, color: "#ffffff",
+            fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 600,
             lineHeight: 1.07, letterSpacing: "-0.28px", margin: "0 0 12px"
           }}>
-            Resume Star.
+            <span className="nav-title-glow-wrap hero-glow-wrap">
+              <span className="nav-title-glow hero-title-glow">Resume Star.</span>
+            </span>
           </h1>
           <p style={{
             fontSize: "21px", fontWeight: 400, color: "rgba(255,255,255,0.72)",

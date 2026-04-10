@@ -59,6 +59,44 @@
         0%   { background-position: 200% center; }
         100% { background-position: -200% center; }
       }
+      /* ── Hero title overrides (bigger text = slower, stronger glow) ── */
+      .hero-title-glow {
+        background: linear-gradient(
+          90deg,
+          #c7d8ff 0%,
+          #ffffff 18%,
+          #e0d0ff 36%,
+          #ffffff 54%,
+          #a8d4ff 72%,
+          #ffffff 100%
+        );
+        background-size: 250% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: navShimmer 4.5s linear infinite;
+      }
+      .hero-glow-wrap {
+        animation: heroGlow 4s ease-in-out infinite;
+      }
+      @keyframes heroGlow {
+        0%, 100% {
+          filter:
+            drop-shadow(0 0 8px  rgba(147, 197, 253, 0.60))
+            drop-shadow(0 0 28px rgba(99,  160, 255, 0.32));
+        }
+        33% {
+          filter:
+            drop-shadow(0 0 12px rgba(196, 181, 253, 0.70))
+            drop-shadow(0 0 40px rgba(167, 139, 250, 0.40));
+        }
+        66% {
+          filter:
+            drop-shadow(0 0 14px rgba(147, 220, 255, 0.75))
+            drop-shadow(0 0 48px rgba(56,  189, 248, 0.42));
+        }
+      }
+
       @keyframes navGlow {
         0%, 100% {
           filter:
