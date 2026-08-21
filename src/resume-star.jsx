@@ -13,7 +13,7 @@ import {
   KeyRound, Upload, FileText, Sparkles, Download, Eye,
   ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Loader2,
   Trash2, Settings, Star, Copy, Check, X, Info, Bot,
-  Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink
+  Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink, Link2
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -457,6 +457,45 @@ async function fetchLinkedInJobs(keywords, location, start, signal) {
 }
 
 /* ──────────────────────────────────────────────────────────
+   UTILITY: Fetch a single LinkedIn job's full JD from its URL
+   ────────────────────────────────────────────────────────── */
+function extractLinkedInJobId(url) {
+  try {
+    const u = new URL(url.trim());
+    // Collections / search pages carry the id in a query param
+    const qp = u.searchParams.get("currentJobId");
+    if (qp && /^\d+$/.test(qp)) return qp;
+    // /jobs/view/<slug>-<id> or /jobs/view/<id>
+    const m = u.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d+)/);
+    if (m) return m[1];
+    // Fallback: any long number in the path
+    const m2 = u.pathname.match(/(\d{6,})/);
+    if (m2) return m2[1];
+  } catch { /* not a valid URL */ }
+  return null;
+}
+
+async function fetchLinkedInJobByUrl(url, signal) {
+  const jobId = extractLinkedInJobId(url);
+  if (!jobId) throw new Error("Couldn't find a job ID in that link. Paste a LinkedIn job URL like linkedin.com/jobs/view/1234567890.");
+
+  const detailUrl = `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`;
+  const resp = await proxyFetch(detailUrl, signal);
+  if (!resp.ok) throw new Error(`Proxy error (${resp.status})`);
+  const html = await resp.text();
+
+  const detail = new DOMParser().parseFromString(html, "text/html");
+  const title       = detail.querySelector(".top-card-layout__title, .topcard__title")?.textContent?.trim() || "";
+  const company     = detail.querySelector(".topcard__org-name-link, .top-card-layout__second-subline a")?.textContent?.trim() || "";
+  const description  = detail.querySelector(".description__text, .show-more-less-html__markup")?.textContent?.trim() || "";
+  if (!description) throw new Error("No job description found — the posting may be expired, private, or region-locked.");
+
+  // Prefix title/company so the AI has full context of the role.
+  const header = [title, company].filter(Boolean).join(" — ");
+  return header ? `${header}\n\n${description}` : description;
+}
+
+/* ──────────────────────────────────────────────────────────
    UTILITY: Batch-score jobs against resume via Claude
    ────────────────────────────────────────────────────────── */
 async function scoreJobsAgainstResume(jobs, resumeText, apiKey) {
@@ -764,8 +803,23 @@ export default function App() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [jdUrl, setJdUrl] = useState("");
+  const [jdFetching, setJdFetching] = useState(false);
+  const [jdFetchError, setJdFetchError] = useState("");
 
   useEffect(() => { try { const s = localStorage.getItem(LS_KEY); if (s) setApiKey(s); } catch {} }, []);
+
+  const handleFetchJdFromUrl = useCallback(async () => {
+    if (!jdUrl.trim() || jdFetching) return;
+    setJdFetchError(""); setJdFetching(true);
+    const controller = new AbortController();
+    try {
+      const description = await fetchLinkedInJobByUrl(jdUrl.trim(), controller.signal);
+      setJd(description);
+    } catch (err) {
+      setJdFetchError(err?.message || "Failed to fetch the job description. Please try again or paste it manually.");
+    } finally { setJdFetching(false); }
+  }, [jdUrl, jdFetching]);
 
   const handleOptimize = useCallback(async () => {
     if (!apiKey.trim()) { setError("Please set your API Key first"); return; }
@@ -870,6 +924,38 @@ export default function App() {
               style={{ color: T.textPrimary, letterSpacing: "-0.374px" }}>
               <FileText size={15} color={T.accent} /> Job Description
             </label>
+
+            {/* Fetch JD from a LinkedIn job link */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  color={T.textMuted} />
+                <input
+                  type="url"
+                  value={jdUrl}
+                  onChange={(e) => { setJdUrl(e.target.value); if (jdFetchError) setJdFetchError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleFetchJdFromUrl(); } }}
+                  placeholder="Paste a LinkedIn job link to auto-fill…"
+                  className="w-full rounded-xl pl-9 pr-3 py-2 text-sm outline-none transition-all"
+                  style={{ background: T.sectionBg, border: `1px solid ${T.inputBorder}`,
+                    color: T.textPrimary, fontFamily: T.font, letterSpacing: "-0.224px" }} />
+              </div>
+              <button
+                onClick={handleFetchJdFromUrl}
+                disabled={!jdUrl.trim() || jdFetching}
+                className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: T.accent, color: "#fff", letterSpacing: "-0.224px" }}>
+                {jdFetching
+                  ? <><Loader2 size={14} className="animate-spin" /> Fetching…</>
+                  : <><Search size={14} /> Fetch</>}
+              </button>
+            </div>
+            {jdFetchError && (
+              <p className="text-xs flex items-start gap-1.5" style={{ color: "#ff453a", letterSpacing: "-0.12px" }}>
+                <AlertCircle size={13} className="flex-shrink-0 mt-0.5" /> {jdFetchError}
+              </p>
+            )}
+
             <textarea value={jd} onChange={(e) => setJd(e.target.value)} rows={10}
               placeholder={"Paste the target job description here…\n\nExample:\nWe are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript…"}
               className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-y transition-all"
