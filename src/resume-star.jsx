@@ -26,7 +26,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
    ────────────────────────────────────────────────────────── */
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 4096;
 const LS_KEY = "ai_resume_optimizer_api_key";
 
