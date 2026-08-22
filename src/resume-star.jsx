@@ -147,6 +147,8 @@ function renderMarkdown(md, accent) {
     .replace(/^(?!<[hlpuoa]|<li|<pre|<hr|<code|<strong|<em)(.+)$/gm,
       '<p style="margin:6px 0;line-height:1.47;color:rgba(0,0,0,0.80);letter-spacing:-0.374px;font-size:17px">$1</p>');
   html = html.replace(/((?:<li[^>]*>.*<\/li>\s*)+)/g, '<ul style="list-style:disc;padding-left:24px;margin:8px 0">$1</ul>');
+  // Themed: run a brand-color bar down the left edge of the whole resume.
+  if (a) html = `<div style="border-left:4px solid ${a};padding-left:22px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${html}</div>`;
   return html;
 }
 
