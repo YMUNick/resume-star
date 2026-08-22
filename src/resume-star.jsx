@@ -13,7 +13,7 @@ import {
   KeyRound, Upload, FileText, Sparkles, Download, Eye,
   ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Loader2,
   Trash2, Settings, Star, Copy, Check, X, Info, Bot,
-  Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink, Link2
+  Search, Briefcase, MapPin, Calendar, DollarSign, ExternalLink, Link2, Palette
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -84,8 +84,30 @@ const T = {
 /* ──────────────────────────────────────────────────────────
    UTILITY: Simple Markdown → HTML renderer
    ────────────────────────────────────────────────────────── */
-function renderMarkdown(md) {
+/* Nudge very light brand colors darker so headings stay legible on white. */
+function ensureReadable(hex) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec((hex || "").trim());
+  if (!m) return null;
+  let r = parseInt(m[1].slice(0, 2), 16),
+      g = parseInt(m[1].slice(2, 4), 16),
+      b = parseInt(m[1].slice(4, 6), 16);
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  if (lum > 0.62) {
+    const f = 0.62 / lum;
+    r = Math.round(r * f); g = Math.round(g * f); b = Math.round(b * f);
+  }
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function renderMarkdown(md, accent) {
   if (!md) return "";
+  // Subtle accent: name (h1), section headings (h2) + underline, and links.
+  // Body text, h3/h4, and bold stay near-black for legibility.
+  const a = ensureReadable(accent);
+  const h1c = a || "#1d1d1f";
+  const h2c = a || "#1d1d1f";
+  const h2border = a ? `2px solid ${a}` : "1px solid rgba(0,0,0,0.08)";
+  const linkc = a || "#0066cc";
   let html = md
     .replace(/```(\w*)\n([\s\S]*?)```/g,
       `<pre style="background:#f5f5f7;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;border:1px solid rgba(0,0,0,0.08)"><code>$2</code></pre>`)
@@ -93,14 +115,14 @@ function renderMarkdown(md) {
       `<code style="background:#f5f5f7;padding:2px 6px;border-radius:4px;font-size:13px;color:#1d1d1f">$1</code>`)
     .replace(/^#### (.+)$/gm, `<h4 style="font-size:14px;font-weight:600;margin:20px 0 8px;color:#1d1d1f;letter-spacing:-0.224px">$1</h4>`)
     .replace(/^### (.+)$/gm,  `<h3 style="font-size:17px;font-weight:600;margin:24px 0 10px;color:#1d1d1f;letter-spacing:-0.374px">$1</h3>`)
-    .replace(/^## (.+)$/gm,   `<h2 style="font-size:21px;font-weight:600;margin:28px 0 12px;color:#1d1d1f;letter-spacing:0.231px;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:8px">$1</h2>`)
-    .replace(/^# (.+)$/gm,    `<h1 style="font-size:28px;font-weight:600;margin:0 0 16px;color:#1d1d1f;letter-spacing:0.196px;line-height:1.14">$1</h1>`)
+    .replace(/^## (.+)$/gm,   `<h2 style="font-size:21px;font-weight:600;margin:28px 0 12px;color:${h2c};letter-spacing:0.231px;border-bottom:${h2border};padding-bottom:8px">$1</h2>`)
+    .replace(/^# (.+)$/gm,    `<h1 style="font-size:28px;font-weight:600;margin:0 0 16px;color:${h1c};letter-spacing:0.196px;line-height:1.14">$1</h1>`)
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
     .replace(/\*\*(.+?)\*\*/g, `<strong style="color:#1d1d1f;font-weight:600">$1</strong>`)
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/^[\-\*] (.+)$/gm, '<li style="margin:4px 0;padding-left:4px;color:rgba(0,0,0,0.80)">$1</li>')
     .replace(/^---$/gm, `<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0"/>`)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:#0066cc;text-decoration:underline">$1</a>`)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:${linkc};text-decoration:underline">$1</a>`)
     .replace(/^(?!<[hlpuoa]|<li|<pre|<hr|<code|<strong|<em)(.+)$/gm,
       '<p style="margin:6px 0;line-height:1.47;color:rgba(0,0,0,0.80);letter-spacing:-0.374px;font-size:17px">$1</p>');
   html = html.replace(/((?:<li[^>]*>.*<\/li>\s*)+)/g, '<ul style="list-style:disc;padding-left:24px;margin:8px 0">$1</ul>');
@@ -135,15 +157,20 @@ async function readFileAsText(file) {
 /* ──────────────────────────────────────────────────────────
    UTILITY: Download as PDF via print dialog
    ────────────────────────────────────────────────────────── */
-function downloadAsPdf(htmlContent, filename = "optimized-resume.pdf") {
+function downloadAsPdf(htmlContent, filename = "optimized-resume.pdf", accent) {
+  const a = ensureReadable(accent);
+  const h1c = a || "#1d1d1f";
+  const h2c = a || "#1d1d1f";
+  const h2border = a ? `2px solid ${a}` : "1px solid rgba(0,0,0,0.08)";
+  const linkc = a || "#0066cc";
   const w = window.open("", "_blank");
   if (!w) { alert("Please allow pop-ups to download the PDF"); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>
 <style>body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1d1d1f;line-height:1.47;font-size:17px;letter-spacing:-0.374px}
-h1{font-size:28px;font-weight:600;letter-spacing:0.196px;line-height:1.14}h2{font-size:21px;font-weight:600;color:#1d1d1f;margin-top:24px;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:4px}
+h1{font-size:28px;font-weight:600;letter-spacing:0.196px;line-height:1.14;color:${h1c}}h2{font-size:21px;font-weight:600;color:${h2c};margin-top:24px;border-bottom:${h2border};padding-bottom:4px}
 h3{font-size:17px;font-weight:600;margin-top:16px}ul{padding-left:24px}li{margin:4px 0}strong{color:#1d1d1f;font-weight:600}
 code{background:#f5f5f7;padding:2px 5px;border-radius:3px;font-size:13px}pre{background:#f5f5f7;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}
-a{color:#0066cc}@media print{body{margin:20px}}</style></head><body>${htmlContent}</body></html>`);
+a{color:${linkc}}@media print{body{margin:20px}}</style></head><body>${htmlContent}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 400);
 }
@@ -308,7 +335,7 @@ function FileUploadArea({ file, setFile, resumeText, setResumeText }) {
 /* ──────────────────────────────────────────────────────────
    COMPONENT: Result Preview Panel
    ────────────────────────────────────────────────────────── */
-function ResultPanel({ result, loading }) {
+function ResultPanel({ result, loading, brandColor, setBrandColor, colorLoading }) {
   const [copied, setCopied] = useState(false);
   const copyMd = () => {
     navigator.clipboard.writeText(result).then(() => {
@@ -354,13 +381,35 @@ function ResultPanel({ result, loading }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Brand color theme control */}
+          <label
+            title={colorLoading ? "Detecting brand color…" : "Resume theme color"}
+            className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all"
+            style={{ color: T.textMuted, background: T.sectionBg, letterSpacing: "-0.12px" }}>
+            {colorLoading
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Palette size={13} color={brandColor || T.textMuted} />}
+            <span className="hidden sm:inline">Theme</span>
+            <span className="w-4 h-4 rounded-full flex-shrink-0"
+              style={{ background: brandColor || "#c7c7cc", border: "1px solid rgba(0,0,0,0.12)" }} />
+            <input type="color" value={brandColor || "#0066cc"}
+              onChange={(e) => setBrandColor(e.target.value)}
+              className="w-0 h-0 opacity-0 absolute pointer-events-none" tabIndex={-1} />
+          </label>
+          {brandColor && (
+            <button onClick={() => setBrandColor(null)} title="Reset theme color"
+              className="flex items-center px-2 py-1.5 rounded-xl text-xs font-medium transition-all"
+              style={{ color: T.textMuted, background: T.sectionBg }}>
+              <X size={13} />
+            </button>
+          )}
           <button onClick={copyMd}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
             style={{ color: T.textMuted, background: T.sectionBg, letterSpacing: "-0.12px" }}>
             {copied ? <Check size={13} color={T.success} /> : <Copy size={13} />}
             {copied ? "Copied!" : "Copy Markdown"}
           </button>
-          <button onClick={() => downloadAsPdf(renderMarkdown(result))}
+          <button onClick={() => downloadAsPdf(renderMarkdown(result, brandColor), "optimized-resume.pdf", brandColor)}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-all active:scale-95"
             style={{ background: T.accent, color: "#fff", letterSpacing: "-0.12px" }}>
             <Download size={13} /> Download PDF
@@ -369,7 +418,7 @@ function ResultPanel({ result, loading }) {
       </div>
       <div className="px-6 py-5 overflow-y-auto"
         style={{ maxHeight: "600px", color: T.textBody, fontFamily: T.font }}
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(result) }} />
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(result, brandColor) }} />
     </div>
   );
 }
@@ -522,6 +571,31 @@ async function scoreJobsAgainstResume(jobs, resumeText, apiKey) {
   const match = text.match(/\[[\d,\s]+\]/);
   if (!match) return null;
   return JSON.parse(match[0]);
+}
+
+/* ──────────────────────────────────────────────────────────
+   UTILITY: Infer the hiring company's brand color via Claude
+   ────────────────────────────────────────────────────────── */
+async function suggestBrandColor(jd, apiKey, signal) {
+  const prompt = `From the job description below, identify the hiring company and return its primary brand color as a single 6-digit hex code.\nIf the company's exact brand color is unknown, pick a professional color that suits its industry.\nReturn ONLY the hex code and nothing else (example: #0A66C2).\n\nJob description:\n${jd.slice(0, 1500)}`;
+
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: 16,
+      messages: [{ role: "user", content: prompt }] }),
+    signal,
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const text = data.content?.map((b) => (b.type === "text" ? b.text : "")).join("") || "";
+  const match = text.match(/#[0-9a-fA-F]{6}/);
+  return match ? match[0] : null;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -806,6 +880,8 @@ export default function App() {
   const [jdUrl, setJdUrl] = useState("");
   const [jdFetching, setJdFetching] = useState(false);
   const [jdFetchError, setJdFetchError] = useState("");
+  const [brandColor, setBrandColor] = useState(null);
+  const [colorLoading, setColorLoading] = useState(false);
 
   useEffect(() => { try { const s = localStorage.getItem(LS_KEY); if (s) setApiKey(s); } catch {} }, []);
 
@@ -849,6 +925,14 @@ export default function App() {
       const text = data.content?.map(b => b.type === "text" ? b.text : "").join("") || "";
       if (!text.trim()) throw new Error("AI returned an empty response. Please try again.");
       setResult(text);
+      // Auto-detect the hiring company's brand color to theme the resume.
+      // Best-effort: a failure here never blocks the optimized resume.
+      setBrandColor(null);
+      setColorLoading(true);
+      suggestBrandColor(jd.trim(), apiKey.trim())
+        .then((color) => { if (color) setBrandColor(color); })
+        .catch(() => {})
+        .finally(() => setColorLoading(false));
     } catch (err) {
       const message = err?.message || String(err) || "Unknown error";
       setError(err.name === "TypeError" && message.includes("fetch")
@@ -1015,7 +1099,8 @@ export default function App() {
         )}
 
         {/* Result */}
-        <div><ResultPanel result={result} loading={loading} /></div>
+        <div><ResultPanel result={result} loading={loading}
+          brandColor={brandColor} setBrandColor={setBrandColor} colorLoading={colorLoading} /></div>
 
         {/* Tips */}
         <div className="rounded-2xl p-6" style={{ background: T.card, boxShadow: T.cardShadow }}>
