@@ -99,6 +99,20 @@ function ensureReadable(hex) {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
+/* Extract a usable #RRGGBB from a model reply that may include prose,
+   a bare hex, or a 3-digit shorthand. */
+function parseHexColor(text) {
+  if (!text) return null;
+  const t = text.trim();
+  let m = t.match(/#([0-9a-fA-F]{6})\b/);           // explicit #RRGGBB anywhere
+  if (m) return `#${m[1].toLowerCase()}`;
+  m = t.match(/#([0-9a-fA-F]{3})\b/);               // #RGB short form → expand
+  if (m) { const c = m[1]; return `#${(c[0] + c[0] + c[1] + c[1] + c[2] + c[2]).toLowerCase()}`; }
+  m = t.match(/^#?([0-9a-fA-F]{6})$/);              // bare 6-hex only if whole reply
+  if (m) return `#${m[1].toLowerCase()}`;
+  return null;
+}
+
 function renderMarkdown(md, accent) {
   if (!md) return "";
   // Subtle accent: name (h1), section headings (h2) + underline, and links.
@@ -577,7 +591,7 @@ async function scoreJobsAgainstResume(jobs, resumeText, apiKey) {
    UTILITY: Infer the hiring company's brand color via Claude
    ────────────────────────────────────────────────────────── */
 async function suggestBrandColor(jd, apiKey, signal) {
-  const prompt = `From the job description below, identify the hiring company and return its primary brand color as a single 6-digit hex code.\nIf the company's exact brand color is unknown, pick a professional color that suits its industry.\nReturn ONLY the hex code and nothing else (example: #0A66C2).\n\nJob description:\n${jd.slice(0, 1500)}`;
+  const prompt = `Identify the hiring company in the job description below and give its primary brand color.\nIf the exact brand color is unknown, choose a professional color that suits the company's industry — never refuse.\nAnswer with ONLY a hex color code in the form #RRGGBB. No words, no explanation.\n\nJob description:\n${jd.slice(0, 1500)}`;
 
   const res = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
@@ -587,15 +601,14 @@ async function suggestBrandColor(jd, apiKey, signal) {
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 16,
+    body: JSON.stringify({ model: MODEL, max_tokens: 64,
       messages: [{ role: "user", content: prompt }] }),
     signal,
   });
   if (!res.ok) return null;
   const data = await res.json();
   const text = data.content?.map((b) => (b.type === "text" ? b.text : "")).join("") || "";
-  const match = text.match(/#[0-9a-fA-F]{6}/);
-  return match ? match[0] : null;
+  return parseHexColor(text);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -926,12 +939,13 @@ export default function App() {
       if (!text.trim()) throw new Error("AI returned an empty response. Please try again.");
       setResult(text);
       // Auto-detect the hiring company's brand color to theme the resume.
-      // Best-effort: a failure here never blocks the optimized resume.
+      // Best-effort: on any failure fall back to the app accent so the
+      // resume is always themed (and the picker still lets users adjust).
       setBrandColor(null);
       setColorLoading(true);
       suggestBrandColor(jd.trim(), apiKey.trim())
-        .then((color) => { if (color) setBrandColor(color); })
-        .catch(() => {})
+        .then((color) => setBrandColor(color || T.accent))
+        .catch(() => setBrandColor(T.accent))
         .finally(() => setColorLoading(false));
     } catch (err) {
       const message = err?.message || String(err) || "Unknown error";
