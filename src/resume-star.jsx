@@ -84,16 +84,18 @@ const T = {
 /* ──────────────────────────────────────────────────────────
    UTILITY: Simple Markdown → HTML renderer
    ────────────────────────────────────────────────────────── */
-/* Nudge very light brand colors darker so headings stay legible on white. */
-function ensureReadable(hex) {
+/* Nudge overly light brand colors darker so they stay legible.
+   `target` is the max relative luminance (0.62 for text on white,
+   ~0.45 for a filled banner that carries white text). */
+function ensureReadable(hex, target = 0.62) {
   const m = /^#?([0-9a-fA-F]{6})$/.exec((hex || "").trim());
   if (!m) return null;
   let r = parseInt(m[1].slice(0, 2), 16),
       g = parseInt(m[1].slice(2, 4), 16),
       b = parseInt(m[1].slice(4, 6), 16);
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  if (lum > 0.62) {
-    const f = 0.62 / lum;
+  if (lum > target) {
+    const f = target / lum;
     r = Math.round(r * f); g = Math.round(g * f); b = Math.round(b * f);
   }
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
@@ -118,10 +120,15 @@ function renderMarkdown(md, accent) {
   // Subtle accent: name (h1), section headings (h2) + underline, and links.
   // Body text, h3/h4, and bold stay near-black for legibility.
   const a = ensureReadable(accent);
-  const h1c = a || "#1d1d1f";
+  const band = accent ? ensureReadable(accent, 0.45) : null;   // darker fill for the name banner
   const h2c = a || "#1d1d1f";
   const h2border = a ? `2px solid ${a}` : "1px solid rgba(0,0,0,0.08)";
   const linkc = a || "#0066cc";
+  // Name (h1): a filled brand-color banner with white text when themed,
+  // otherwise the plain near-black heading.
+  const h1style = band
+    ? `font-size:26px;font-weight:700;margin:0 0 22px;color:#fff;background:${band};padding:16px 20px;border-radius:10px;letter-spacing:0.196px;line-height:1.14;-webkit-print-color-adjust:exact;print-color-adjust:exact`
+    : `font-size:28px;font-weight:600;margin:0 0 16px;color:#1d1d1f;letter-spacing:0.196px;line-height:1.14`;
   let html = md
     .replace(/```(\w*)\n([\s\S]*?)```/g,
       `<pre style="background:#f5f5f7;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;border:1px solid rgba(0,0,0,0.08)"><code>$2</code></pre>`)
@@ -130,7 +137,7 @@ function renderMarkdown(md, accent) {
     .replace(/^#### (.+)$/gm, `<h4 style="font-size:14px;font-weight:600;margin:20px 0 8px;color:#1d1d1f;letter-spacing:-0.224px">$1</h4>`)
     .replace(/^### (.+)$/gm,  `<h3 style="font-size:17px;font-weight:600;margin:24px 0 10px;color:#1d1d1f;letter-spacing:-0.374px">$1</h3>`)
     .replace(/^## (.+)$/gm,   `<h2 style="font-size:21px;font-weight:600;margin:28px 0 12px;color:${h2c};letter-spacing:0.231px;border-bottom:${h2border};padding-bottom:8px">$1</h2>`)
-    .replace(/^# (.+)$/gm,    `<h1 style="font-size:28px;font-weight:600;margin:0 0 16px;color:${h1c};letter-spacing:0.196px;line-height:1.14">$1</h1>`)
+    .replace(/^# (.+)$/gm,    `<h1 style="${h1style}">$1</h1>`)
     .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
     .replace(/\*\*(.+?)\*\*/g, `<strong style="color:#1d1d1f;font-weight:600">$1</strong>`)
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
@@ -173,15 +180,19 @@ async function readFileAsText(file) {
    ────────────────────────────────────────────────────────── */
 function downloadAsPdf(htmlContent, filename = "optimized-resume.pdf", accent) {
   const a = ensureReadable(accent);
-  const h1c = a || "#1d1d1f";
+  const band = accent ? ensureReadable(accent, 0.45) : null;
   const h2c = a || "#1d1d1f";
   const h2border = a ? `2px solid ${a}` : "1px solid rgba(0,0,0,0.08)";
   const linkc = a || "#0066cc";
+  const h1css = band
+    ? `font-size:26px;font-weight:700;letter-spacing:0.196px;line-height:1.14;color:#fff;background:${band};padding:16px 20px;border-radius:10px;margin:0 0 22px;-webkit-print-color-adjust:exact;print-color-adjust:exact`
+    : `font-size:28px;font-weight:600;letter-spacing:0.196px;line-height:1.14;color:#1d1d1f`;
   const w = window.open("", "_blank");
   if (!w) { alert("Please allow pop-ups to download the PDF"); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>
-<style>body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1d1d1f;line-height:1.47;font-size:17px;letter-spacing:-0.374px}
-h1{font-size:28px;font-weight:600;letter-spacing:0.196px;line-height:1.14;color:${h1c}}h2{font-size:21px;font-weight:600;color:${h2c};margin-top:24px;border-bottom:${h2border};padding-bottom:4px}
+<style>*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1d1d1f;line-height:1.47;font-size:17px;letter-spacing:-0.374px}
+h1{${h1css}}h2{font-size:21px;font-weight:600;color:${h2c};margin-top:24px;border-bottom:${h2border};padding-bottom:4px}
 h3{font-size:17px;font-weight:600;margin-top:16px}ul{padding-left:24px}li{margin:4px 0}strong{color:#1d1d1f;font-weight:600}
 code{background:#f5f5f7;padding:2px 5px;border-radius:3px;font-size:13px}pre{background:#f5f5f7;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}
 a{color:${linkc}}@media print{body{margin:20px}}</style></head><body>${htmlContent}</body></html>`);
