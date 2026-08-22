@@ -152,6 +152,13 @@ function renderMarkdown(md, accent) {
   return html;
 }
 
+/* Drop the trailing "## Optimization Notes" section — shown in the
+   on-screen preview but not wanted in the exported PDF. */
+function stripOptimizationNotes(md) {
+  if (!md) return md;
+  return md.replace(/(^|\n)#{1,6}\s*Optimization Notes[\s\S]*$/i, "").trimEnd();
+}
+
 /* ──────────────────────────────────────────────────────────
    UTILITY: Read uploaded file as text (PDF / MD / TXT)
    ────────────────────────────────────────────────────────── */
@@ -436,7 +443,7 @@ function ResultPanel({ result, loading, brandColor, setBrandColor, colorLoading 
             {copied ? <Check size={13} color={T.success} /> : <Copy size={13} />}
             {copied ? "Copied!" : "Copy Markdown"}
           </button>
-          <button onClick={() => downloadAsPdf(renderMarkdown(result, brandColor), "optimized-resume.pdf", brandColor)}
+          <button onClick={() => downloadAsPdf(renderMarkdown(stripOptimizationNotes(result), brandColor), "optimized-resume.pdf", brandColor)}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-all active:scale-95"
             style={{ background: T.accent, color: "#fff", letterSpacing: "-0.12px" }}>
             <Download size={13} /> Download PDF
